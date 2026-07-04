@@ -4,6 +4,12 @@ import type { ReportContext, TemplateElement } from '~/composables/useTemplatesA
 const route = useRoute()
 const router = useRouter()
 const { fetchTemplate, createTemplate, updateTemplate, previewPdf, fetchReportContext, uploadImage } = useTemplatesApi()
+const { isLoggedIn, logout } = useAuthApi()
+
+async function handleLogout() {
+  logout()
+  await router.push('/')
+}
 
 const reportContext = ref<ReportContext | null>(null)
 fetchReportContext()
@@ -269,6 +275,11 @@ function removeColumn(index: number) {
 }
 
 async function handleSave() {
+  if (!isLoggedIn.value) {
+    saveError.value = 'Log in to save this template.'
+    return
+  }
+
   isSaving.value = true
   saveError.value = ''
   try {
@@ -294,7 +305,10 @@ async function handleSave() {
       <NuxtLink class="btn btn-secondary" to="/templates">&larr; Templates</NuxtLink>
       <input v-model="name" class="field-input name-input" placeholder="Template name" />
       <button class="btn btn-primary" :disabled="isSaving" @click="handleSave">{{ isSaving ? 'Saving…' : 'Save' }}</button>
-      <span v-if="!templateId" class="hint-text">Not saved yet — the preview still reflects your current edits</span>
+      <span v-if="!isLoggedIn" class="hint-text">Log in (top right) to save — you can still design and preview without an account</span>
+      <span v-else-if="!templateId" class="hint-text">Not saved yet — the preview still reflects your current edits</span>
+      <button v-if="isLoggedIn" class="btn btn-secondary auth-toolbar-button" @click="handleLogout">Log out</button>
+      <NuxtLink v-else class="btn btn-secondary auth-toolbar-button" to="/login">Log in</NuxtLink>
     </header>
 
     <p v-if="saveError" class="error-text">{{ saveError }}</p>
@@ -419,6 +433,10 @@ async function handleSave() {
 .name-input {
   flex: 1;
   max-width: 300px;
+}
+.auth-toolbar-button {
+  margin-left: auto;
+  white-space: nowrap;
 }
 .element-tooltip {
   /* position/top/left come from the computed tooltipStyle (JS-measured, flips/clamps to

@@ -53,31 +53,31 @@ export interface ReportContext {
 }
 
 export function useTemplatesApi() {
-  const { public: { apiBase } } = useRuntimeConfig()
+  const { apiFetch, apiBase } = useApiFetch()
 
-  const fetchTemplates = () => $fetch<Template[]>(`${apiBase}/templates`)
+  const fetchTemplates = () => apiFetch<Template[]>('/templates')
 
-  const fetchTemplate = (id: string) => $fetch<Template>(`${apiBase}/templates/${id}`)
+  const fetchTemplate = (id: string) => apiFetch<Template>(`/templates/${id}`)
 
-  const createTemplate = (payload: SaveTemplatePayload) =>
-    $fetch<Template>(`${apiBase}/templates`, { method: 'POST', body: payload })
+  const createTemplate = (payload: SaveTemplatePayload) => apiFetch<Template>('/templates', { method: 'POST', body: payload })
 
   const updateTemplate = (id: string, payload: SaveTemplatePayload) =>
-    $fetch<Template>(`${apiBase}/templates/${id}`, { method: 'PATCH', body: payload })
+    apiFetch<Template>(`/templates/${id}`, { method: 'PATCH', body: payload })
 
-  const deleteTemplate = (id: string) => $fetch(`${apiBase}/templates/${id}`, { method: 'DELETE' })
+  const deleteTemplate = (id: string) => apiFetch(`/templates/${id}`, { method: 'DELETE' })
 
+  // Public backend route (see reports.controller.ts) — opened via plain <a href>, no auth header needed.
   const customPdfUrl = (templateId: string) => `${apiBase}/reports/custom/${templateId}/pdf`
 
   const previewPdf = (payload: PreviewTemplatePayload) =>
-    $fetch<Blob>(`${apiBase}/reports/preview-pdf`, { method: 'POST', body: payload, responseType: 'blob' })
+    apiFetch<Blob>('/reports/preview-pdf', { method: 'POST', body: payload, responseType: 'blob' })
 
-  const fetchReportContext = () => $fetch<ReportContext>(`${apiBase}/reports/context`)
+  const fetchReportContext = () => apiFetch<ReportContext>('/reports/context')
 
   const uploadImage = (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    return $fetch<{ dataUri: string }>(`${apiBase}/templates/upload-image`, { method: 'POST', body: formData })
+    return apiFetch<{ dataUri: string }>('/templates/upload-image', { method: 'POST', body: formData })
   }
 
   return {

@@ -36,22 +36,22 @@ export interface CreateMovementPayload {
 }
 
 export function useInventoryApi() {
-  const { public: { apiBase } } = useRuntimeConfig()
+  const { apiFetch, apiBase } = useApiFetch()
 
-  const fetchProducts = () => $fetch<Product[]>(`${apiBase}/products`)
+  const fetchProducts = () => apiFetch<Product[]>('/products')
 
-  const fetchLowStock = () => $fetch<Product[]>(`${apiBase}/products/low-stock`)
+  const fetchLowStock = () => apiFetch<Product[]>('/products/low-stock')
 
-  const createProduct = (payload: CreateProductPayload) =>
-    $fetch<Product>(`${apiBase}/products`, { method: 'POST', body: payload })
+  const createProduct = (payload: CreateProductPayload) => apiFetch<Product>('/products', { method: 'POST', body: payload })
 
-  const deleteProduct = (id: string) => $fetch(`${apiBase}/products/${id}`, { method: 'DELETE' })
+  const deleteProduct = (id: string) => apiFetch(`/products/${id}`, { method: 'DELETE' })
 
   const recordMovement = (payload: CreateMovementPayload) =>
-    $fetch<StockMovement>(`${apiBase}/stock/movements`, { method: 'POST', body: payload })
+    apiFetch<StockMovement>('/stock/movements', { method: 'POST', body: payload })
 
-  const fetchMovements = (productId: string) => $fetch<StockMovement[]>(`${apiBase}/stock/movements/${productId}`)
+  const fetchMovements = (productId: string) => apiFetch<StockMovement[]>(`/stock/movements/${productId}`)
 
+  // Public backend route (see reports.controller.ts) — opened via plain <a href>, no auth header needed.
   const stockPdfUrl = () => `${apiBase}/reports/stock-pdf`
 
   return { fetchProducts, fetchLowStock, createProduct, deleteProduct, recordMovement, fetchMovements, stockPdfUrl }
