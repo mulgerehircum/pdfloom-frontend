@@ -147,6 +147,31 @@ onBeforeUnmount(() => {
   if (previewBlobUrl.value) URL.revokeObjectURL(previewBlobUrl.value)
 })
 
+// Warns before losing in-progress template edits, whether the user closes/refreshes the tab
+// or navigates elsewhere in the app. lastSavedSnapshot is set once after initial load and
+// again after every successful save; anything that changes the current state relative to
+// that baseline counts as "unsaved".
+function snapshotCurrent() {
+  return JSON.stringify({ name: name.value, elements: elements.value })
+}
+
+const lastSavedSnapshot = ref('')
+const isDirty = computed(() => lastSavedSnapshot.value !== '' && snapshotCurrent() !== lastSavedSnapshot.value)
+
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  if (!isDirty.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnload))
+
+onBeforeRouteLeave(() => {
+  if (!isDirty.value) return true
+  return confirm('You have unsaved changes to this template. Leave without saving?')
+})
+
 async function loadExisting() {
   if (isNew) return
   loadError.value = ''
@@ -165,6 +190,9 @@ onMounted(async () => {
   // cancel that scheduled duplicate so the initial preview only renders once.
   if (previewDebounceTimer) clearTimeout(previewDebounceTimer)
   refreshPreview()
+  // Baseline for dirty-tracking — anything changed after this point (including on a brand
+  // new template with zero elements) counts as an unsaved change.
+  lastSavedSnapshot.value = snapshotCurrent()
 })
 
 function makeId() {
@@ -287,9 +315,13 @@ async function handleSave() {
     if (isNew || !templateId.value) {
       const created = await createTemplate(payload)
       templateId.value = created._id
+      // Reset the dirty baseline before navigating so the route-leave guard doesn't
+      // mistake this save-triggered redirect for an attempt to abandon unsaved changes.
+      lastSavedSnapshot.value = snapshotCurrent()
       await router.replace(`/templates/${created._id}`)
     } else {
       await updateTemplate(templateId.value, payload)
+      lastSavedSnapshot.value = snapshotCurrent()
     }
   } catch (err: any) {
     saveError.value = err?.data?.message?.toString() ?? 'Failed to save template'
