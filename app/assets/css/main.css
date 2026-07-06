@@ -1,27 +1,30 @@
 :root {
-  /* Colors */
-  --color-bg: #f6f7fb;
-  --color-surface: #ffffff;
-  --color-border: #e3e6ec;
-  --color-border-strong: #c8cedb;
-  --color-text: #1a1d29;
-  --color-text-muted: #6b7280;
-  --color-text-faint: #9aa1ae;
+  /* Colors — dark is the default palette; [data-theme="light"] below overrides it. */
+  --color-bg: #12181a;
+  --color-surface: #1a2224;
+  --color-border: #29393b;
+  --color-border-strong: #3a4d4f;
+  --color-text: #e6ebea;
+  --color-text-muted: #8fa19e;
+  --color-text-faint: #66756f;
 
-  --color-primary: #4f6df5;
-  --color-primary-hover: #3d59e0;
-  --color-primary-soft: #edf0fe;
-  --color-primary-contrast: #ffffff;
+  --color-primary: #3ecf8e;
+  --color-primary-hover: #55dba0;
+  --color-primary-soft: #123326;
+  --color-primary-faint: rgba(62, 207, 142, 0.55);
+  --color-primary-contrast: #08251a;
 
-  --color-danger: #e0483e;
-  --color-danger-hover: #c93c33;
-  --color-danger-soft: #fdecea;
+  --color-danger: #ea6a5c;
+  --color-danger-hover: #f28376;
+  --color-danger-soft: #3a201c;
 
-  --color-success: #1f9d63;
-  --color-success-soft: #e8f7ef;
+  --color-success: #2ba98f;
+  --color-success-soft: #102c26;
 
-  --color-warning: #b7791f;
-  --color-warning-soft: #fdf3e0;
+  --color-warning: #d1a13a;
+  --color-warning-soft: #332711;
+
+  --color-overlay: rgba(0, 0, 0, 0.6);
 
   /* Spacing scale */
   --space-1: 4px;
@@ -39,9 +42,9 @@
   --radius-pill: 999px;
 
   /* Shadow */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 4px 16px rgba(16, 24, 40, 0.08);
-  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.14);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
 
   /* Type */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -53,6 +56,72 @@
   --text-2xl: 26px;
 }
 
+/* Explicit dark override (same values as :root) — lets [data-theme] always win regardless
+   of attribute-application timing, matching the pattern light mode relies on below. */
+:root[data-theme='dark'] {
+  --color-bg: #12181a;
+  --color-surface: #1a2224;
+  --color-border: #29393b;
+  --color-border-strong: #3a4d4f;
+  --color-text: #e6ebea;
+  --color-text-muted: #8fa19e;
+  --color-text-faint: #66756f;
+
+  --color-primary: #3ecf8e;
+  --color-primary-hover: #55dba0;
+  --color-primary-soft: #123326;
+  --color-primary-faint: rgba(62, 207, 142, 0.55);
+  --color-primary-contrast: #08251a;
+
+  --color-danger: #ea6a5c;
+  --color-danger-hover: #f28376;
+  --color-danger-soft: #3a201c;
+
+  --color-success: #2ba98f;
+  --color-success-soft: #102c26;
+
+  --color-warning: #d1a13a;
+  --color-warning-soft: #332711;
+
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme='light'] {
+  --color-bg: #f3f8f7;
+  --color-surface: #ffffff;
+  --color-border: #d9e7e5;
+  --color-border-strong: #b7d0cd;
+  --color-text: #16221f;
+  --color-text-muted: #5c716d;
+  --color-text-faint: #8a9d99;
+
+  --color-primary: #1f9d6e;
+  --color-primary-hover: #178055;
+  --color-primary-soft: #e2f7ee;
+  --color-primary-faint: rgba(31, 157, 110, 0.55);
+  --color-primary-contrast: #ffffff;
+
+  --color-danger: #d1493c;
+  --color-danger-hover: #b93c30;
+  --color-danger-soft: #fbeae7;
+
+  --color-success: #1f7a68;
+  --color-success-soft: #e0f2ee;
+
+  --color-warning: #a8751f;
+  --color-warning-soft: #f7ecd3;
+
+  --color-overlay: rgba(16, 24, 40, 0.45);
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 16px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 16px 40px rgba(16, 24, 40, 0.14);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -61,10 +130,23 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* Both, not just body — during a view-transition dismount (see useTheme.ts) there's a
+     brief moment where html's own background can paint before body's does, flashing the
+     browser's default white if html has none set. */
+  background: var(--color-bg);
+  /* Without this, when page content is shorter than the viewport, the browser normally
+     extends body's background to fill the leftover space as a special quirk — but a view
+     transition snapshot only captures each element's own box, not that extended fill, so
+     the leftover area shows through as blank/white during the transition. Forcing html and
+     body to actually span the full viewport makes that space part of their real painted
+     box, so it's captured correctly. */
+  min-height: 100%;
+}
+html {
+  height: 100%;
 }
 
 body {
-  background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--text-md);
@@ -135,6 +217,17 @@ a {
   padding: 4px var(--space-3);
   font-size: var(--text-xs);
 }
+.btn-icon {
+  padding: 0;
+  /* Stretches to match a taller sibling (e.g. an input) when placed in a grid/flex row
+     with stretch alignment, and aspect-ratio keeps width following height so it's always
+     square rather than a fixed 24px that goes narrow-and-tall next to a taller input. */
+  height: 100%;
+  min-height: 24px;
+  aspect-ratio: 1;
+  font-size: var(--text-md);
+  line-height: 1;
+}
 .btn-danger {
   background: var(--color-surface);
   color: var(--color-danger);
@@ -196,6 +289,33 @@ a {
   color: var(--color-primary);
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: 100;
+}
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-5);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
 .text-muted {
   color: var(--color-text-muted);
 }
@@ -206,4 +326,30 @@ a {
 .hint-text {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
+}
+
+/* Dark/light toggle ripple (see useTheme.ts) — the browser's default cross-fade is
+   disabled so only the custom clip-path circle animation is visible. Backgrounds are
+   forced transparent on every layer in the pseudo-element chain (some engines apply an
+   opaque backdrop by default on one of these) so nothing but the real page can ever
+   paint white underneath. */
+::view-transition,
+::view-transition-group(root),
+::view-transition-image-pair(root) {
+  background: transparent;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  background: transparent;
+}
+/* ::view-transition-new(root) stacks above ::view-transition-old(root) by default. That's
+   right for switching to light (new grows to cover old), but switching to dark needs old
+   on top instead, so shrinking its clip-path away actually uncovers the new (dark) layer
+   underneath rather than being invisibly hidden beneath an already-opaque new layer. */
+:root[data-vt-direction='to-dark']::view-transition-old(root) {
+  z-index: 1;
+}
+:root[data-vt-direction='to-dark']::view-transition-new(root) {
+  z-index: 0;
 }
