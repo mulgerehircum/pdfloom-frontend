@@ -28,6 +28,14 @@ export interface CreateProductPayload {
   lowStockThreshold?: number
 }
 
+export interface UpdateProductPayload {
+  name?: string
+  sku?: string
+  category?: string
+  unitPrice?: number
+  lowStockThreshold?: number
+}
+
 export interface CreateMovementPayload {
   product: string
   type: 'IN' | 'OUT' | 'ADJUSTMENT'
@@ -44,6 +52,9 @@ export function useInventoryApi() {
 
   const createProduct = (payload: CreateProductPayload) => apiFetch<Product>('/products', { method: 'POST', body: payload })
 
+  const updateProduct = (id: string, payload: UpdateProductPayload) =>
+    apiFetch<Product>(`/products/${id}`, { method: 'PATCH', body: payload })
+
   const deleteProduct = (id: string) => apiFetch(`/products/${id}`, { method: 'DELETE' })
 
   const recordMovement = (payload: CreateMovementPayload) =>
@@ -54,5 +65,14 @@ export function useInventoryApi() {
   // Public backend route (see reports.controller.ts) — opened via plain <a href>, no auth header needed.
   const stockPdfUrl = () => `${apiBase}/reports/stock-pdf`
 
-  return { fetchProducts, fetchLowStock, createProduct, deleteProduct, recordMovement, fetchMovements, stockPdfUrl }
+  return {
+    fetchProducts,
+    fetchLowStock,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    recordMovement,
+    fetchMovements,
+    stockPdfUrl
+  }
 }

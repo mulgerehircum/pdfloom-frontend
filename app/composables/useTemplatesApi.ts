@@ -77,6 +77,16 @@ export function useTemplatesApi() {
   const previewPdf = (payload: PreviewTemplatePayload) =>
     apiFetch<Blob>('/reports/preview-pdf', { method: 'POST', body: payload, responseType: 'blob' })
 
+  // Ownership-checked (unlike customPdfUrl above), so — unlike that one — this can't just be
+  // a plain <img src> URL: the backend needs a Bearer token, which a browser-initiated <img>
+  // request has no way to attach. Fetched as a blob instead and handed to the caller to turn
+  // into an object URL, the same way usePdfPreview.ts already handles the PDF blob.
+  const fetchTemplatePreviewImage = (templateId: string, width?: number) =>
+    apiFetch<Blob>(`/reports/custom/${templateId}/preview-image`, {
+      responseType: 'blob',
+      query: width ? { width } : undefined
+    })
+
   const fetchReportContext = () => apiFetch<ReportContext>('/reports/context')
 
   const uploadImage = (file: File) => {
@@ -93,6 +103,7 @@ export function useTemplatesApi() {
     deleteTemplate,
     customPdfUrl,
     previewPdf,
+    fetchTemplatePreviewImage,
     fetchReportContext,
     uploadImage
   }
