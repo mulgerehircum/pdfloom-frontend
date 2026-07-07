@@ -1457,10 +1457,18 @@ async function handleSave() {
             </div>
 
             <div class="autosave-line">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              <span>Changes save automatically</span>
+              <div class="autosave-message">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                <span>Changes save automatically</span>
+              </div>
+              <button type="button" class="tooltip-close-button" aria-label="Close" title="Close" @click="selectedId = null">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 6L6 18" />
+                  <path d="M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -1824,12 +1832,36 @@ async function handleSave() {
 .autosave-line {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: var(--space-2);
   color: var(--color-primary);
+}
+.autosave-message {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 .autosave-line span {
   font-size: 11.5px;
   color: var(--color-text-faint);
+}
+.tooltip-close-button {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.tooltip-close-button:hover {
+  background: var(--color-border);
+  color: var(--color-text);
 }
 .editor-sidebar {
   /* Pages and Add element used to be two separate floating cards of mismatched height/width
