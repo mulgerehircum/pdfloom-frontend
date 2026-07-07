@@ -375,7 +375,7 @@ function closeExpanded() {
 }
 .app-logo {
   display: block;
-  height: 72px;
+  height: 110px;
   width: auto;
 }
 .summary-line {
