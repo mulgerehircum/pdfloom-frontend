@@ -470,6 +470,11 @@ watch(currentPage, () => {
 })
 
 watch(elements, schedulePreview, { deep: true })
+// Page background/gradient changes are compiled into the PDF just like element styling, so
+// they need the same debounced re-fetch — this was previously missing entirely (only
+// history tracked these refs), so editing the page background never updated the live PDF
+// preview, only the on-canvas CSS approximation.
+watch([pageBackgroundColor, pageBackgroundFill, pageGradientStops, pageGradientAngle], schedulePreview, { deep: true })
 // Unlike element edits, adding a page changes the document's actual page structure, so the
 // backend needs to recompile it — refetch immediately rather than debouncing (it's a
 // discrete, infrequent action, not a rapid-fire edit like typing or dragging).
