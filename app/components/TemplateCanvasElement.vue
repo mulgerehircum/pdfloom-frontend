@@ -109,7 +109,7 @@ function onResizeStart(startEvent: PointerEvent) {
   function onMove(moveEvent: PointerEvent) {
     const dx = (moveEvent.clientX - startX) / props.scale
     const dy = (moveEvent.clientY - startY) / props.scale
-    emit('resize', { width: Math.max(20, Math.round(originWidth + dx)), height: Math.max(20, Math.round(originHeight + dy)) })
+    emit('resize', { width: Math.max(1, Math.round(originWidth + dx)), height: Math.max(1, Math.round(originHeight + dy)) })
   }
 
   function onUp() {
@@ -167,15 +167,19 @@ function onResizeStart(startEvent: PointerEvent) {
 .canvas-element {
   position: absolute;
   box-sizing: border-box;
-  border: 2px dashed #a3adc2;
+  /* outline (not border) — a border adds to the box's own rendered size, so a genuinely
+     thin element (e.g. a 1px divider) would look ~4px+ thick, dominated by its own editing
+     chrome. outline draws just outside the box without inflating it, so the true size stays
+     visible — matching the real PDF, whose compiled .el has no border of its own at all. */
+  outline: 2px dashed #a3adc2;
   background: rgba(79, 109, 245, 0.06);
   cursor: move;
   user-select: none;
   overflow: hidden;
 }
 .canvas-element.selected {
-  border-style: solid;
-  border-color: var(--color-primary);
+  outline-style: solid;
+  outline-color: var(--color-primary);
 }
 .element-body {
   padding: 2px 4px;
