@@ -184,6 +184,11 @@ export function useTemplatesApi() {
   // Public backend route (see reports.controller.ts) — opened via plain <a href>, no auth header needed.
   const customPdfUrl = (templateId: string) => `${apiBase}/reports/custom/${templateId}/pdf`
 
+  // Public + shared-gated (not ownership-checked, unlike fetchTemplatePreviewImage below) —
+  // safe as a plain <img src>, same reasoning as customPdfUrl above.
+  const publicTemplatePreviewImageUrl = (templateId: string, width?: number) =>
+    `${apiBase}/reports/public/${templateId}/preview-image${width ? `?width=${width}` : ''}`
+
   const previewPdf = (payload: PreviewTemplatePayload) =>
     apiFetch<Blob>('/reports/preview-pdf', { method: 'POST', body: payload, responseType: 'blob' })
 
@@ -217,6 +222,7 @@ export function useTemplatesApi() {
     cloneTemplate,
     fetchFontOptions,
     customPdfUrl,
+    publicTemplatePreviewImageUrl,
     previewPdf,
     fetchTemplatePreviewImage,
     fetchReportContext,

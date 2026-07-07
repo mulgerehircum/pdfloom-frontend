@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PublicTemplateSummary, Template } from '~/composables/useTemplatesApi'
 
-const { fetchTemplates, deleteTemplate, customPdfUrl, fetchPublicTemplates, cloneTemplate } = useTemplatesApi()
+const { fetchTemplates, deleteTemplate, customPdfUrl, fetchPublicTemplates, cloneTemplate, publicTemplatePreviewImageUrl } = useTemplatesApi()
 const { isLoggedIn } = useAuthApi()
 const router = useRouter()
 
@@ -125,6 +125,14 @@ async function handleUseTemplate(template: PublicTemplateSummary) {
     <p v-if="galleryError" class="error-text spaced">{{ galleryError }}</p>
     <section class="gallery-grid">
       <div v-for="template in galleryTemplates" :key="template._id" class="card gallery-card">
+        <div class="gallery-card-thumb" :style="{ aspectRatio: `${template.pageWidth} / ${template.pageHeight}` }">
+          <img
+            :src="publicTemplatePreviewImageUrl(template._id, 320)"
+            :alt="`${template.name} preview`"
+            loading="lazy"
+            class="gallery-card-thumb-img"
+          />
+        </div>
         <div class="gallery-card-head">
           <h3>{{ template.name }}</h3>
           <span v-if="template.tier === 'premium'" class="badge badge-primary" title="Premium template">&#128274; Premium</span>
@@ -231,6 +239,20 @@ async function handleUseTemplate(template: PublicTemplateSummary) {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+.gallery-card-thumb {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+.gallery-card-thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
 }
 .gallery-card-head {
   display: flex;
