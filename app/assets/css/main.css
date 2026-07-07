@@ -8,18 +8,18 @@
   --color-text-muted: #8fa19e;
   --color-text-faint: #66756f;
 
-  --color-primary: #3ecf8e;
-  --color-primary-hover: #55dba0;
-  --color-primary-soft: #123326;
-  --color-primary-faint: rgba(62, 207, 142, 0.55);
-  --color-primary-contrast: #08251a;
+  --color-primary: #2bb4a8;
+  --color-primary-hover: #3fc9bc;
+  --color-primary-soft: #0e2e2b;
+  --color-primary-faint: rgba(43, 180, 168, 0.55);
+  --color-primary-contrast: #04211e;
 
   --color-danger: #ea6a5c;
   --color-danger-hover: #f28376;
   --color-danger-soft: #3a201c;
 
-  --color-success: #2ba98f;
-  --color-success-soft: #102c26;
+  --color-success: #3b8fd1;
+  --color-success-soft: #10263a;
 
   --color-warning: #d1a13a;
   --color-warning-soft: #332711;
@@ -67,18 +67,18 @@
   --color-text-muted: #8fa19e;
   --color-text-faint: #66756f;
 
-  --color-primary: #3ecf8e;
-  --color-primary-hover: #55dba0;
-  --color-primary-soft: #123326;
-  --color-primary-faint: rgba(62, 207, 142, 0.55);
-  --color-primary-contrast: #08251a;
+  --color-primary: #2bb4a8;
+  --color-primary-hover: #3fc9bc;
+  --color-primary-soft: #0e2e2b;
+  --color-primary-faint: rgba(43, 180, 168, 0.55);
+  --color-primary-contrast: #04211e;
 
   --color-danger: #ea6a5c;
   --color-danger-hover: #f28376;
   --color-danger-soft: #3a201c;
 
-  --color-success: #2ba98f;
-  --color-success-soft: #102c26;
+  --color-success: #3b8fd1;
+  --color-success-soft: #10263a;
 
   --color-warning: #d1a13a;
   --color-warning-soft: #332711;
@@ -99,18 +99,18 @@
   --color-text-muted: #5c716d;
   --color-text-faint: #8a9d99;
 
-  --color-primary: #1f9d6e;
-  --color-primary-hover: #178055;
-  --color-primary-soft: #e2f7ee;
-  --color-primary-faint: rgba(31, 157, 110, 0.55);
+  --color-primary: #0f7d70;
+  --color-primary-hover: #0c675c;
+  --color-primary-soft: #dff5f2;
+  --color-primary-faint: rgba(15, 125, 112, 0.55);
   --color-primary-contrast: #ffffff;
 
   --color-danger: #d1493c;
   --color-danger-hover: #b93c30;
   --color-danger-soft: #fbeae7;
 
-  --color-success: #1f7a68;
-  --color-success-soft: #e0f2ee;
+  --color-success: #1f6fa8;
+  --color-success-soft: #e3f1fa;
 
   --color-warning: #a8751f;
   --color-warning-soft: #f7ecd3;
