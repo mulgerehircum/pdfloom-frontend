@@ -1,6 +1,6 @@
-# Inventory Manager — Frontend
+# PDFloom — Frontend
 
-Nuxt 4 frontend for the [inventory-manager](../inventory-manager) API: an inventory dashboard plus a drag-and-drop PDF template designer.
+Nuxt 4 frontend for the [PDFloom](../inventory-manager) API: a drag-and-drop PDF template designer, bundled here with an inventory dashboard as its first real data source.
 
 ## Stack
 

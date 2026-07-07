@@ -192,7 +192,7 @@ function closeExpanded() {
 
 <template>
   <main class="page">
-    <h1>Inventory Manager</h1>
+    <h1>PDFloom</h1>
     <p class="summary-line">
       {{ totalCount }} products ·
       <span class="summary-restock">{{ restockingCount }} need restocking</span>
