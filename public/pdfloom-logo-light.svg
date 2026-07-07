@@ -83,7 +83,7 @@
   <rect x="385" y="443" width="1140" height="290" rx="16" fill="#f3f8f7" stroke="#b7d0cd" stroke-width="4"/>
 
   <!-- wordmark (2x — bottom/left edges anchored to the same spot as before, growing up/right) -->
-  <text x="398" y="812" font-family="'Poppins','Inter',system-ui,sans-serif" font-weight="800" font-size="236" letter-spacing="-4">
+  <text x="398" y="667" font-family="'Poppins','Inter',system-ui,sans-serif" font-weight="800" font-size="236" letter-spacing="-4">
     <tspan fill="#0f7d70">PDF</tspan><tspan fill="#16221f">Loom</tspan>
   </text>
 </svg>
