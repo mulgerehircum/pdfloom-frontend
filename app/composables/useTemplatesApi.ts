@@ -1,8 +1,26 @@
-export type ElementType = 'text' | 'field' | 'table' | 'image'
+// Explicit import — see the comment in useAuthApi.ts for why this doesn't rely on Nuxt's
+// auto-import for cross-composable calls.
+import { useApiFetch } from './useApiFetch'
+
+export type ElementType = 'text' | 'field' | 'table' | 'image' | 'panel'
+export type TextAlign = 'left' | 'center' | 'right'
 
 export interface TableColumn {
   label: string
   fieldPath: string
+  // When true, fieldPath is treated as a boolean and rendered as a colored pill (see
+  // template-compiler.ts's compileTableCell) instead of raw true/false text.
+  badge?: boolean
+  badgeTrueLabel?: string
+  badgeTrueBg?: string
+  badgeTrueColor?: string
+  badgeFalseLabel?: string
+  badgeFalseBg?: string
+  badgeFalseColor?: string
+  // Independent of the table element's own bold/textAlign — e.g. a numeric column can be
+  // right-aligned while a name column stays left-aligned.
+  bold?: boolean
+  align?: TextAlign
 }
 
 export interface TemplateElement {
@@ -15,6 +33,15 @@ export interface TemplateElement {
   // 0-indexed page this element is placed on — see Template.pageCount.
   page?: number
   fontSize?: number
+  // Must be one of the names returned by GET /templates/fonts — see useTemplatesApi's
+  // fetchFontOptions and google-fonts.ts on the backend.
+  fontFamily?: string
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  color?: string
+  backgroundColor?: string
+  borderRadius?: number
   content?: string
   fieldPath?: string
   itemsPath?: string
@@ -54,7 +81,18 @@ export interface PreviewTemplatePayload {
 export interface ReportContext {
   generatedAt: string
   totalValue: string
+  totalSkus: number
+  unitsInStock: number
+  needsRestocking: number
   products: Array<Record<string, unknown>>
+}
+
+// Mirrors ReportsService.getFieldSchema — the field/column names available to the
+// template editor's 'field' and table-column pickers, independent of whether any product
+// data currently exists.
+export interface ReportFieldSchema {
+  scalarFields: string[]
+  productFields: string[]
 }
 
 export function useTemplatesApi() {
@@ -70,6 +108,8 @@ export function useTemplatesApi() {
     apiFetch<Template>(`/templates/${id}`, { method: 'PATCH', body: payload })
 
   const deleteTemplate = (id: string) => apiFetch(`/templates/${id}`, { method: 'DELETE' })
+
+  const fetchFontOptions = () => apiFetch<string[]>('/templates/fonts')
 
   // Public backend route (see reports.controller.ts) — opened via plain <a href>, no auth header needed.
   const customPdfUrl = (templateId: string) => `${apiBase}/reports/custom/${templateId}/pdf`
@@ -89,6 +129,8 @@ export function useTemplatesApi() {
 
   const fetchReportContext = () => apiFetch<ReportContext>('/reports/context')
 
+  const fetchReportFields = () => apiFetch<ReportFieldSchema>('/reports/fields')
+
   const uploadImage = (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
@@ -101,10 +143,12 @@ export function useTemplatesApi() {
     createTemplate,
     updateTemplate,
     deleteTemplate,
+    fetchFontOptions,
     customPdfUrl,
     previewPdf,
     fetchTemplatePreviewImage,
     fetchReportContext,
+    fetchReportFields,
     uploadImage
   }
 }

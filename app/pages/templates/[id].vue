@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { ReportContext, TemplateElement } from '~/composables/useTemplatesApi'
+import type { ReportContext, ReportFieldSchema, TemplateElement } from '~/composables/useTemplatesApi'
 
 const route = useRoute()
 const router = useRouter()
-const { fetchTemplate, createTemplate, updateTemplate, previewPdf, fetchReportContext, uploadImage } = useTemplatesApi()
+const { fetchTemplate, createTemplate, updateTemplate, previewPdf, fetchReportContext, fetchReportFields, fetchFontOptions, uploadImage } =
+  useTemplatesApi()
 const { isLoggedIn, logout } = useAuthApi()
 
 async function handleLogout() {
@@ -16,6 +17,27 @@ fetchReportContext()
   .then((context) => (reportContext.value = context))
   .catch(() => {
     // Non-fatal — field elements just fall back to showing the raw {{ fieldPath }} placeholder.
+  })
+
+// Backs the 'field' and table-column pickers below — sourced from the backend (see
+// ReportsService.getFieldSchema) instead of a hardcoded list, so a field added there shows
+// up here automatically instead of silently drifting out of sync.
+const reportFieldSchema = ref<ReportFieldSchema | null>(null)
+fetchReportFields()
+  .then((schema) => (reportFieldSchema.value = schema))
+  .catch(() => {
+    // Non-fatal — pickers just show no options until this loads (existing fieldPath values
+    // on already-placed elements are unaffected either way).
+  })
+
+// Backs the "Font" picker below — see GOOGLE_FONTS on the backend (google-fonts.ts), the
+// single source of truth for what's selectable, validated, and actually linked in the PDF.
+const fontOptions = ref<string[]>([])
+fetchFontOptions()
+  .then((fonts) => (fontOptions.value = fonts))
+  .catch(() => {
+    // Non-fatal — the picker just shows no options; an element with a fontFamily already set
+    // still renders correctly, this only affects choosing/changing it.
   })
 
 const isNew = route.params.id === 'new'
@@ -37,6 +59,23 @@ const currentPage = ref(0)
 // share the same x/y coordinate space (each page is its own 0..PAGE_WIDTH/HEIGHT box), so
 // mixing them into the canvas or alignment-guide math would be visually wrong.
 const elementsOnCurrentPage = computed(() => elements.value.filter((el) => (el.page ?? 0) === currentPage.value))
+
+// Loads whichever Google Fonts are actually used anywhere in the template (not just the
+// current page, so switching pages never flashes unstyled text) — mirrors what
+// template-compiler.ts does for the exported PDF, so the canvas actually matches it instead
+// of just setting a font-family the browser has no font file for. Google Fonts CSS2 API
+// wants '+' for spaces in the family param; every curated name here is plain words, so a
+// simple space replace matches the encoding exactly (see google-fonts.ts on the backend).
+const usedFontFamilies = computed(() => [...new Set(elements.value.map((el) => el.fontFamily).filter((f): f is string => !!f))])
+useHead({
+  link: computed(() =>
+    usedFontFamilies.value.map((name) => ({
+      key: `google-font-${name}`,
+      rel: 'stylesheet',
+      href: `https://fonts.googleapis.com/css2?family=${name.replace(/ /g, '+')}&display=swap`
+    }))
+  )
+})
 
 // For the page-thumbnail sidebar — a live (read-only) mini render of each page's own
 // content, reusing the same TemplateCanvasElement the main canvas uses, just tiny.
@@ -161,6 +200,7 @@ const tooltipStyle = computed(() => {
     tooltipWidth: tooltipSize.width,
     tooltipHeight: tooltipSize.height,
     pageWidth: PAGE_WIDTH,
+    pageHeight: PAGE_HEIGHT,
     gap: TOOLTIP_GAP
   })
 
@@ -205,18 +245,34 @@ function handleResize(size: { width: number; height: number }) {
   activeGuideX.value = verticalGuideX
   activeGuideY.value = horizontalGuideY
   // Same bound as handleMove on both axes — resizing grows from the fixed top-left corner,
-  // so cap width/height at whatever room is left before the page's right/bottom edge.
-  const maxWidth = Math.max(20, PAGE_WIDTH - selectedElement.value.x)
-  const maxHeight = Math.max(20, PAGE_HEIGHT - selectedElement.value.y)
+  // so cap width/height at whatever room is left before the page's right/bottom edge. Floor
+  // of 1 (not some larger minimum) so a hairline divider/border panel stays draggable down to
+  // its real 1px size instead of snapping back up.
+  const maxWidth = Math.max(1, PAGE_WIDTH - selectedElement.value.x)
+  const maxHeight = Math.max(1, PAGE_HEIGHT - selectedElement.value.y)
   updateSelected({
-    width: Math.min(Math.max(20, size.width + dWidth), maxWidth),
-    height: Math.min(Math.max(20, size.height + dHeight), maxHeight)
+    width: Math.min(Math.max(1, size.width + dWidth), maxWidth),
+    height: Math.min(Math.max(1, size.height + dHeight), maxHeight)
   })
 }
 
 function clearGuides() {
   activeGuideX.value = null
   activeGuideY.value = null
+}
+
+// Same clamp as handleMove's drag path — typed X/Y shouldn't be able to push the element
+// off the page any more than dragging can.
+function updatePositionX(value: number) {
+  if (!selectedElement.value) return
+  const maxX = Math.max(0, PAGE_WIDTH - selectedElement.value.width)
+  updateSelected({ x: Math.min(Math.max(0, value), maxX) })
+}
+
+function updatePositionY(value: number) {
+  if (!selectedElement.value) return
+  const maxY = Math.max(0, PAGE_HEIGHT - selectedElement.value.height)
+  updateSelected({ y: Math.min(Math.max(0, value), maxY) })
 }
 
 function addPage() {
@@ -330,9 +386,14 @@ function handleRailKeydown(event: KeyboardEvent) {
   pagesRailEl.value?.scrollBy({ top: event.key === 'ArrowDown' ? rowHeight : -rowHeight, behavior: 'smooth' })
 }
 
-// The scalar fields available on the report data context (see backend ReportsService.buildReportContext).
-const scalarFieldOptions = ['generatedAt', 'totalValue']
-const productColumnOptions = ['sku', 'name', 'category', 'quantity', 'unitPrice', 'value', 'isLowStock']
+// Sourced from the backend's field schema (see reportFieldSchema above) rather than
+// hardcoded, so these stay in sync with whatever ReportsService actually exposes.
+const scalarFieldOptions = computed(() => reportFieldSchema.value?.scalarFields ?? [])
+const productColumnOptions = computed(() => reportFieldSchema.value?.productFields ?? [])
+
+// '' maps to "no fontFamily set" (falls back to the page's default sans-serif) — see the
+// updateSelected call above, which turns an empty string back into undefined before saving.
+const fontSelectOptions = computed(() => [{ value: '', label: 'Default' }, ...fontOptions.value])
 
 async function renderCurrentPreview() {
   if (!previewCanvasEl.value || !lastPreviewBlob) return
@@ -546,7 +607,7 @@ function nextStagger() {
   return computeStagger(elementsOnCurrentPage.value.length)
 }
 
-function addElement(type: 'text' | 'field' | 'table') {
+function addElement(type: 'text' | 'field' | 'table' | 'panel') {
   const stagger = nextStagger()
   const base = { id: makeId(), x: 40 + stagger, y: 40 + stagger, width: 160, height: 24, fontSize: 12, page: currentPage.value }
 
@@ -554,6 +615,10 @@ function addElement(type: 'text' | 'field' | 'table') {
     elements.value.push({ ...base, type, content: 'Label' })
   } else if (type === 'field') {
     elements.value.push({ ...base, type, fieldPath: 'totalValue' })
+  } else if (type === 'panel') {
+    // Sized/colored to be visible immediately — an empty, invisible rect would be
+    // indistinguishable from a failed click.
+    elements.value.push({ ...base, type, width: 200, height: 400, backgroundColor: '#e2e8f0' })
   } else {
     elements.value.push({
       ...base,
@@ -831,6 +896,13 @@ async function handleSave() {
           Image
           <span class="element-button-plus">+</span>
         </button>
+        <button class="element-button" @click="addElement('panel')">
+          <svg class="element-button-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
+          </svg>
+          Panel
+          <span class="element-button-plus">+</span>
+        </button>
 
         <p class="palette-group-label">Data-bound</p>
 
@@ -931,16 +1003,81 @@ async function handleSave() {
                     <span class="column-header-label">Label</span>
                     <span class="column-header-label">Data key</span>
                     <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
                   </div>
-                  <div v-for="(col, index) in selectedElement.columns" :key="index" class="column-row">
-                    <input v-model="col.label" placeholder="Label" class="column-label" />
-                    <AppSelect v-model="col.fieldPath" class="column-datakey-select" :options="productColumnOptions" />
-                    <button class="column-remove-button" aria-label="Remove column" title="Remove column" @click="removeColumn(index)">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="M18 6L6 18M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+                  <template v-for="(col, index) in selectedElement.columns" :key="index">
+                    <div class="column-row">
+                      <input v-model="col.label" placeholder="Label" class="column-label" />
+                      <AppSelect v-model="col.fieldPath" class="column-datakey-select" :options="productColumnOptions" />
+                      <button
+                        type="button"
+                        class="column-bold-toggle"
+                        :class="{ active: col.bold }"
+                        aria-label="Bold"
+                        :aria-pressed="col.bold ?? false"
+                        title="Bold"
+                        @click="col.bold = !col.bold"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        class="column-align-toggle"
+                        aria-label="Cycle text alignment"
+                        :title="`Align: ${col.align ?? 'left'} (click to change)`"
+                        @click="col.align = col.align === 'left' || !col.align ? 'center' : col.align === 'center' ? 'right' : 'left'"
+                      >
+                        <svg v-if="(col.align ?? 'left') === 'left'" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+                          <path d="M1.5 2.5h9M1.5 6h5.5M1.5 9.5h9" />
+                        </svg>
+                        <svg v-else-if="col.align === 'center'" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+                          <path d="M1.5 2.5h9M3.25 6h5.5M1.5 9.5h9" />
+                        </svg>
+                        <svg v-else width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
+                          <path d="M1.5 2.5h9M5 6h5.5M1.5 9.5h9" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="column-badge-toggle"
+                        :class="{ active: col.badge }"
+                        aria-label="Render as true/false badge"
+                        :aria-pressed="col.badge ?? false"
+                        title="Render as true/false badge"
+                        @click="col.badge = !col.badge"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M12 2l2.9 6.3 6.9.8-5 4.8 1.3 6.8L12 17.6 6 20.7l1.3-6.8-5-4.8 6.9-.8z" />
+                        </svg>
+                      </button>
+                      <button class="column-remove-button" aria-label="Remove column" title="Remove column" @click="removeColumn(index)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div v-if="col.badge" class="badge-config">
+                      <div class="badge-state">
+                        <span class="badge-state-heading">True</span>
+                        <input v-model="col.badgeTrueLabel" placeholder="Label (e.g. OK)" class="badge-label-input" />
+                        <div class="badge-color-row">
+                          <AppColorInput :model-value="col.badgeTrueBg" placeholder="bg" @update:model-value="(v) => (col.badgeTrueBg = v)" />
+                          <AppColorInput :model-value="col.badgeTrueColor" placeholder="text" @update:model-value="(v) => (col.badgeTrueColor = v)" />
+                        </div>
+                      </div>
+                      <div class="badge-state">
+                        <span class="badge-state-heading">False</span>
+                        <input v-model="col.badgeFalseLabel" placeholder="Label (e.g. Low stock)" class="badge-label-input" />
+                        <div class="badge-color-row">
+                          <AppColorInput :model-value="col.badgeFalseBg" placeholder="bg" @update:model-value="(v) => (col.badgeFalseBg = v)" />
+                          <AppColorInput :model-value="col.badgeFalseColor" placeholder="text" @update:model-value="(v) => (col.badgeFalseColor = v)" />
+                        </div>
+                      </div>
+                    </div>
+                  </template>
                 </div>
                 <div v-else class="columns-empty">No columns yet</div>
 
@@ -958,7 +1095,131 @@ async function handleSave() {
               <button class="btn btn-secondary small-button" @click="triggerReplaceImage">Replace image</button>
             </div>
 
-            <div v-if="selectedElement.type !== 'image'" class="field-group">
+            <div class="field-group">
+              <label>Position (px)</label>
+              <div class="dimensions-row">
+                <input
+                  type="number"
+                  aria-label="X (px)"
+                  placeholder="X"
+                  :value="selectedElement.x"
+                  @input="updatePositionX(Number(($event.target as HTMLInputElement).value))"
+                />
+                <span class="dimensions-separator">,</span>
+                <input
+                  type="number"
+                  aria-label="Y (px)"
+                  placeholder="Y"
+                  :value="selectedElement.y"
+                  @input="updatePositionY(Number(($event.target as HTMLInputElement).value))"
+                />
+              </div>
+            </div>
+
+            <div v-if="selectedElement.type !== 'text' && selectedElement.type !== 'field'" class="field-group">
+              <label>Dimensions (px)</label>
+              <div class="dimensions-row">
+                <input
+                  type="number"
+                  min="1"
+                  aria-label="Width (px)"
+                  placeholder="Width"
+                  :value="selectedElement.width"
+                  @input="updateSelected({ width: Math.max(1, Number(($event.target as HTMLInputElement).value)) })"
+                />
+                <span class="dimensions-separator">×</span>
+                <input
+                  type="number"
+                  min="1"
+                  aria-label="Height (px)"
+                  placeholder="Height"
+                  :value="selectedElement.height"
+                  @input="updateSelected({ height: Math.max(1, Number(($event.target as HTMLInputElement).value)) })"
+                />
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label>Style</label>
+              <div
+                v-if="selectedElement.type === 'text' || selectedElement.type === 'field' || selectedElement.type === 'table'"
+                class="style-row"
+              >
+                <span class="style-row-label">Font</span>
+                <AppSelect
+                  class="style-row-select"
+                  :model-value="selectedElement.fontFamily ?? ''"
+                  :options="fontSelectOptions"
+                  @update:model-value="(v) => updateSelected({ fontFamily: v || undefined })"
+                />
+              </div>
+              <div v-if="selectedElement.type === 'text' || selectedElement.type === 'field'" class="style-row">
+                <span class="style-row-label">Format</span>
+                <div class="format-toggle-group">
+                  <button
+                    type="button"
+                    class="format-toggle-button bold-label"
+                    :class="{ active: selectedElement.bold }"
+                    title="Bold"
+                    aria-label="Bold"
+                    :aria-pressed="selectedElement.bold ?? false"
+                    @click="updateSelected({ bold: !selectedElement.bold })"
+                  >
+                    B
+                  </button>
+                  <button
+                    type="button"
+                    class="format-toggle-button italic-label"
+                    :class="{ active: selectedElement.italic }"
+                    title="Italic"
+                    aria-label="Italic"
+                    :aria-pressed="selectedElement.italic ?? false"
+                    @click="updateSelected({ italic: !selectedElement.italic })"
+                  >
+                    I
+                  </button>
+                  <button
+                    type="button"
+                    class="format-toggle-button underline-label"
+                    :class="{ active: selectedElement.underline }"
+                    title="Underline"
+                    aria-label="Underline"
+                    :aria-pressed="selectedElement.underline ?? false"
+                    @click="updateSelected({ underline: !selectedElement.underline })"
+                  >
+                    U
+                  </button>
+                </div>
+              </div>
+              <div v-if="selectedElement.type === 'text' || selectedElement.type === 'field'" class="style-row">
+                <span class="style-row-label">Text</span>
+                <AppColorInput
+                  :model-value="selectedElement.color"
+                  placeholder="default"
+                  @update:model-value="(v) => updateSelected({ color: v })"
+                />
+              </div>
+              <div class="style-row">
+                <span class="style-row-label">Background</span>
+                <AppColorInput
+                  :model-value="selectedElement.backgroundColor"
+                  placeholder="none"
+                  @update:model-value="(v) => updateSelected({ backgroundColor: v })"
+                />
+              </div>
+              <div class="style-row">
+                <span class="style-row-label">Radius</span>
+                <input
+                  type="number"
+                  min="0"
+                  class="font-size-input"
+                  :value="selectedElement.borderRadius ?? 0"
+                  @input="updateSelected({ borderRadius: Number(($event.target as HTMLInputElement).value) })"
+                />
+              </div>
+            </div>
+
+            <div v-if="selectedElement.type !== 'image' && selectedElement.type !== 'panel'" class="field-group">
               <label>Size (px)</label>
               <input
                 type="number"
@@ -1106,7 +1367,7 @@ async function handleSave() {
 }
 .column-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 20px;
+  grid-template-columns: 1fr 1fr 20px 20px 20px 20px;
   gap: var(--space-1);
   align-items: stretch;
 }
@@ -1123,6 +1384,29 @@ async function handleSave() {
 .column-datakey-select :deep(.app-select-trigger) {
   font-family: ui-monospace, Menlo, monospace;
 }
+.column-bold-toggle,
+.column-align-toggle {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-faint);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.column-bold-toggle:hover,
+.column-align-toggle:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.column-bold-toggle.active {
+  color: var(--color-primary);
+}
 .column-remove-button {
   width: 20px;
   height: 20px;
@@ -1138,6 +1422,123 @@ async function handleSave() {
 .column-remove-button:hover {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+.column-badge-toggle {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-faint);
+  cursor: pointer;
+}
+.column-badge-toggle:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.column-badge-toggle.active {
+  color: var(--color-primary);
+}
+.format-toggle-group {
+  display: flex;
+  gap: 2px;
+}
+.format-toggle-button {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+.format-toggle-button:hover {
+  border-color: var(--color-primary);
+}
+.format-toggle-button.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+.format-toggle-button.italic-label {
+  font-style: italic;
+}
+.format-toggle-button.underline-label {
+  text-decoration: underline;
+}
+.badge-config {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  margin-top: -2px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.badge-state {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.badge-state-heading {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-faint);
+}
+.badge-label-input {
+  width: 100%;
+}
+.badge-color-row {
+  display: flex;
+  gap: var(--space-1);
+}
+.badge-color-row > * {
+  flex: 1;
+  min-width: 0;
+}
+.style-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.style-row + .style-row {
+  margin-top: var(--space-1);
+}
+.style-row-label {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.style-row .app-color-input {
+  max-width: 160px;
+}
+.style-row-select {
+  max-width: 160px;
+}
+.dimensions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.dimensions-row input {
+  flex: 1;
+  min-width: 0;
+}
+.dimensions-separator {
+  flex-shrink: 0;
+  color: var(--color-text-faint);
+  font-size: var(--text-xs);
 }
 .add-column-button {
   display: flex;

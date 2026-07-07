@@ -133,7 +133,16 @@ function onResizeStart(startEvent: PointerEvent) {
       top: `${element.y}px`,
       width: autoFitsContent ? 'auto' : `${element.width}px`,
       height: autoFitsContent ? 'auto' : `${element.height}px`,
-      fontSize: `${element.fontSize ?? 12}px`
+      fontSize: `${element.fontSize ?? 12}px`,
+      // Matches template-compiler.ts's fallback stack exactly — the actual font file is
+      // loaded via the <link> useHead() injects in [id].vue based on which fonts are in use.
+      fontFamily: element.fontFamily ? `'${element.fontFamily}', Helvetica, Arial, sans-serif` : undefined,
+      fontWeight: element.bold ? 700 : undefined,
+      fontStyle: element.italic ? 'italic' : undefined,
+      textDecoration: element.underline ? 'underline' : undefined,
+      color: element.color || undefined,
+      backgroundColor: element.backgroundColor || undefined,
+      borderRadius: element.borderRadius ? `${element.borderRadius}px` : undefined
     }"
     @pointerdown="onDragStart"
   >
@@ -144,12 +153,18 @@ function onResizeStart(startEvent: PointerEvent) {
         <table class="table-preview">
           <thead>
             <tr>
-              <th v-for="col in element.columns" :key="col.label">{{ col.label }}</th>
+              <th v-for="col in element.columns" :key="col.label" :style="{ textAlign: col.align || undefined }">{{ col.label }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(product, n) in sampleProducts" :key="n">
-              <td v-for="col in element.columns" :key="col.label">{{ tableCellValue(product, col.fieldPath) }}</td>
+              <td
+                v-for="col in element.columns"
+                :key="col.label"
+                :style="{ textAlign: col.align || undefined, fontWeight: col.bold ? 700 : undefined }"
+              >
+                {{ tableCellValue(product, col.fieldPath) }}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -158,6 +173,8 @@ function onResizeStart(startEvent: PointerEvent) {
         <img v-if="element.imageData" :src="element.imageData" class="image-preview" alt="" />
         <div v-else class="image-placeholder">No image</div>
       </template>
+      <!-- 'panel' has no content of its own — just the shared color/backgroundColor/
+           borderRadius styling applied above on .canvas-element. -->
     </div>
     <div v-if="selected && !autoFitsContent" class="resize-handle" @pointerdown="onResizeStart"></div>
   </div>
