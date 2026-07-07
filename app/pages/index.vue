@@ -2,6 +2,11 @@
 import type { CreateProductPayload, Product, UpdateProductPayload } from '~/composables/useInventoryApi'
 
 const { fetchProducts, createProduct, updateProduct, deleteProduct, recordMovement } = useInventoryApi()
+const { theme } = useTheme()
+// Matches the theme-specific colors baked into each SVG (see public/pdfloom-logo*.svg) --
+// they're not currentColor-driven, so the right file has to be picked per theme rather than
+// relying on CSS to recolor a single asset.
+const logoSrc = computed(() => (theme.value === 'light' ? '/pdfloom-logo-light.svg' : '/pdfloom-logo.svg'))
 
 const products = ref<Product[]>([])
 const loadError = ref('')
@@ -192,7 +197,7 @@ function closeExpanded() {
 
 <template>
   <main class="page">
-    <h1>PDFloom</h1>
+    <img :src="logoSrc" alt="PDFloom" class="app-logo" />
     <p class="summary-line">
       {{ totalCount }} products ·
       <span class="summary-restock">{{ restockingCount }} need restocking</span>
@@ -368,8 +373,10 @@ function closeExpanded() {
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
 }
-h1 {
-  margin: 0;
+.app-logo {
+  display: block;
+  height: 72px;
+  width: auto;
 }
 .summary-line {
   margin: var(--space-2) 0 0;

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 1170" fill="none">
+  <rect width="1260" height="1170" fill="#12181a"/>
+
+  <!-- thread lines (drawn first, so wheel/hub/text sit on top) -->
+  <g stroke="#2bb4a8" stroke-width="3" stroke-linecap="round">
+    <line x1="500" y1="250" x2="1050" y2="460"/>
+    <line x1="905" y1="598" x2="1082" y2="368"/>
+    <line x1="500" y1="780" x2="665" y2="690"/>
+  </g>
+
+  <!-- big wheel -->
+  <circle cx="355" cy="480" r="275" stroke="#e6ebea" stroke-width="26"/>
+  <g stroke="#8fa19e" stroke-width="9" stroke-linecap="round">
+    <line x1="355" y1="480" x2="355" y2="215"/>
+    <line x1="355" y1="480" x2="500" y2="240"/>
+    <line x1="355" y1="480" x2="592" y2="365"/>
+    <line x1="355" y1="480" x2="625" y2="480"/>
+    <line x1="355" y1="480" x2="592" y2="595"/>
+    <line x1="355" y1="480" x2="500" y2="720"/>
+    <line x1="355" y1="480" x2="355" y2="745"/>
+    <line x1="355" y1="480" x2="210" y2="720"/>
+    <line x1="355" y1="480" x2="118" y2="595"/>
+    <line x1="355" y1="480" x2="85" y2="480"/>
+    <line x1="355" y1="480" x2="118" y2="365"/>
+    <line x1="355" y1="480" x2="210" y2="240"/>
+  </g>
+  <circle cx="355" cy="480" r="32" fill="#e6ebea"/>
+  <circle cx="355" cy="480" r="20" fill="#12181a"/>
+  <circle cx="355" cy="480" r="12" fill="#2bb4a8"/>
+
+  <!-- post from big wheel hub down to base -->
+  <line x1="355" y1="510" x2="345" y2="775" stroke="#c7cccb" stroke-width="16" stroke-linecap="round"/>
+
+  <!-- small starburst wheel -->
+  <g stroke="#8fa19e" stroke-width="5" stroke-linecap="round">
+    <line x1="490" y1="780" x2="490" y2="675"/>
+    <line x1="490" y1="780" x2="565" y2="700"/>
+    <line x1="490" y1="780" x2="595" y2="750"/>
+    <line x1="490" y1="780" x2="595" y2="810"/>
+    <line x1="490" y1="780" x2="565" y2="860"/>
+    <line x1="490" y1="780" x2="490" y2="885"/>
+    <line x1="490" y1="780" x2="415" y2="860"/>
+    <line x1="490" y1="780" x2="385" y2="810"/>
+    <line x1="490" y1="780" x2="385" y2="750"/>
+    <line x1="490" y1="780" x2="415" y2="700"/>
+  </g>
+  <circle cx="490" cy="780" r="20" fill="#e6ebea"/>
+  <circle cx="490" cy="780" r="12" fill="#12181a"/>
+  <circle cx="490" cy="780" r="7" fill="#2bb4a8"/>
+
+  <!-- base plank -->
+  <polygon points="300,780 1160,722 1160,748 300,806" fill="#e6ebea" fill-opacity="0.08" stroke="#9fa8a7" stroke-width="3"/>
+  <line x1="330" y1="774" x2="1130" y2="720" stroke="#2bb4a8" stroke-width="4"/>
+  <line x1="330" y1="791" x2="1130" y2="737" stroke="#2bb4a8" stroke-width="4"/>
+
+  <!-- legs -->
+  <line x1="325" y1="783" x2="200" y2="1085" stroke="#7c8f8c" stroke-width="20" stroke-linecap="round"/>
+  <line x1="1090" y1="735" x2="1170" y2="1065" stroke="#7c8f8c" stroke-width="20" stroke-linecap="round"/>
+
+  <!-- flyer assembly (right side) -->
+  <line x1="1085" y1="730" x2="1085" y2="420" stroke="#dfe3e3" stroke-width="14" stroke-linecap="round"/>
+  <clipPath id="flyerWheelClip">
+    <circle cx="1085" cy="420" r="55"/>
+  </clipPath>
+  <circle cx="1085" cy="420" r="55" fill="#e6ebea"/>
+  <g clip-path="url(#flyerWheelClip)" stroke="#2bb4a8" stroke-width="6">
+    <line x1="1030" y1="402" x2="1140" y2="402"/>
+    <line x1="1030" y1="420" x2="1140" y2="420"/>
+    <line x1="1030" y1="438" x2="1140" y2="438"/>
+  </g>
+  <line x1="1085" y1="382" x2="1085" y2="362" stroke="#e6ebea" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="1085" cy="358" r="15" fill="#e6ebea"/>
+
+  <!-- hand/crank mechanism below the flyer wheel -->
+  <line x1="1075" y1="478" x2="960" y2="598" stroke="#dfe3e3" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="1075" cy="478" r="11" fill="#e6ebea"/>
+  <circle cx="1100" cy="500" r="9" fill="#e6ebea"/>
+  <circle cx="1121" cy="517" r="8" fill="#e6ebea"/>
+  <line x1="1075" y1="478" x2="1100" y2="500" stroke="#e6ebea" stroke-width="7" stroke-linecap="round"/>
+  <line x1="1100" y1="500" x2="1121" y2="517" stroke="#e6ebea" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- solid backing so the wheel spokes/threads behind the wordmark don't show through it -->
+  <rect x="385" y="588" width="570" height="145" rx="8" fill="#12181a" stroke="#3a4d4f" stroke-width="2"/>
+
+  <!-- wordmark -->
+  <text x="398" y="700" font-family="'Poppins','Inter',system-ui,sans-serif" font-weight="800" font-size="118" letter-spacing="-2">
+    <tspan fill="#2bb4a8">PDF</tspan><tspan fill="#e6ebea">Loom</tspan>
+  </text>
+</svg>
