@@ -32,6 +32,7 @@ export interface TooltipPositionInput {
   tooltipWidth: number
   tooltipHeight: number
   pageWidth: number
+  pageHeight: number
   gap: number
 }
 
@@ -41,9 +42,15 @@ export interface TooltipPosition {
 }
 
 // Positions a tooltip relative to the scaled canvas's own (0,0) origin, flipping above/below
-// and clamping horizontally so it never escapes past the canvas's edges regardless of where
+// and clamping to both axes so it never escapes past the canvas's edges regardless of where
 // the element sits (a real bug caught during development: an element near the top of the
 // canvas pushed the tooltip above the visible page entirely).
+//
+// The above/below flip previously only checked whether there was room *above* — it never
+// verified the "below" fallback actually fit within the canvas's bottom edge, so an element
+// near the bottom of a tall tooltip's page still bled past the container. Now both sides are
+// checked, with a final clamp for the (rare) case where the tooltip is taller than the canvas
+// has room for in either direction.
 export function computeTooltipPosition({
   elementX,
   elementY,
@@ -52,18 +59,34 @@ export function computeTooltipPosition({
   tooltipWidth,
   tooltipHeight,
   pageWidth,
+  pageHeight,
   gap
 }: TooltipPositionInput): TooltipPosition {
   const scaledX = elementX * canvasScale
   const scaledY = elementY * canvasScale
   const scaledHeight = elementHeight * canvasScale
   const scaledCanvasWidth = pageWidth * canvasScale
+  const scaledCanvasHeight = pageHeight * canvasScale
 
-  const fitsAbove = scaledY - gap - tooltipHeight >= 0
-  const top = fitsAbove ? scaledY - gap - tooltipHeight : scaledY + scaledHeight + gap
+  const above = scaledY - gap - tooltipHeight
+  const below = scaledY + scaledHeight + gap
+
+  const fitsAbove = above >= 0
+  const fitsBelow = below + tooltipHeight <= scaledCanvasHeight
+
+  let top: number
+  if (fitsAbove) {
+    top = above
+  } else if (fitsBelow) {
+    top = below
+  } else {
+    // Neither side has room (tooltip taller than the canvas) — clamp inside the canvas
+    // bounds rather than letting it bleed past either edge.
+    top = Math.min(Math.max(0, below), Math.max(0, scaledCanvasHeight - tooltipHeight))
+  }
 
   const maxLeft = Math.max(0, scaledCanvasWidth - tooltipWidth)
-  const left = Math.min(scaledX, maxLeft)
+  const left = Math.min(Math.max(0, scaledX), maxLeft)
 
   return { left, top }
 }

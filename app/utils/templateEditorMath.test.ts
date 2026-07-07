@@ -41,6 +41,7 @@ describe('computeTooltipPosition', () => {
     tooltipWidth: 200,
     tooltipHeight: 80,
     pageWidth: 794,
+    pageHeight: 1123,
     gap: 8
   }
 
@@ -72,6 +73,34 @@ describe('computeTooltipPosition', () => {
     // scaledX = 50, scaledY = 100, scaledHeight = 12
     expect(left).toBe(50)
     expect(top).toBe(100 - 8 - 80)
+  })
+
+  it('clamps to the bottom edge when the tooltip does not fit above or below', () => {
+    // Element near the bottom of a short page: nothing fits above (elementY - gap - tooltipHeight < 0
+    // is false here, so it actually does fit above in this case) — use a case where both the
+    // above check fails (element too close to the top of a fold) AND below overflows the page.
+    const { top } = computeTooltipPosition({
+      ...base,
+      elementY: 10,
+      elementHeight: 20,
+      tooltipHeight: 80,
+      pageHeight: 90 // below = 10 + 20 + 8 = 38; 38 + 80 = 118 > 90, so below doesn't fit either
+    })
+    // above = 10 - 8 - 80 = -78 (doesn't fit); below overflows; clamp to pageHeight - tooltipHeight
+    expect(top).toBe(90 - 80)
+  })
+
+  it('flips below only when the below position actually fits within the page', () => {
+    // Regression test: previously flipping to "below" never checked the page's bottom edge —
+    // an element near the bottom of the page with a tall tooltip would render past the container.
+    const { top } = computeTooltipPosition({
+      ...base,
+      elementY: 5, // doesn't fit above
+      elementHeight: 10,
+      tooltipHeight: 50,
+      pageHeight: 1123
+    })
+    expect(top).toBe(5 + 10 + 8) // below fits comfortably within a 1123px page
   })
 })
 
