@@ -54,6 +54,7 @@ export interface Template {
   name: string
   pageWidth: number
   pageHeight: number
+  pageBackgroundColor?: string
   pageCount: number
   elements: TemplateElement[]
   compiledTemplate: string
@@ -65,6 +66,7 @@ export interface SaveTemplatePayload {
   name: string
   pageWidth?: number
   pageHeight?: number
+  pageBackgroundColor?: string
   pageCount?: number
   elements: TemplateElement[]
 }
@@ -72,6 +74,7 @@ export interface SaveTemplatePayload {
 export interface PreviewTemplatePayload {
   pageWidth?: number
   pageHeight?: number
+  pageBackgroundColor?: string
   pageCount?: number
   elements: TemplateElement[]
 }

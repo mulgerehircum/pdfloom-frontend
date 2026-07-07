@@ -52,6 +52,7 @@ const PAGE_THUMB_HEIGHT = PAGE_HEIGHT * pageThumbScale
 const PREVIEW_DEBOUNCE_MS = 600
 
 const name = ref('Untitled template')
+const pageBackgroundColor = ref<string | undefined>(undefined)
 const elements = ref<TemplateElement[]>([])
 const pageCount = ref(1)
 const currentPage = ref(0)
@@ -414,6 +415,7 @@ async function refreshPreview() {
     const blob = await previewPdf({
       pageWidth: PAGE_WIDTH,
       pageHeight: PAGE_HEIGHT,
+      pageBackgroundColor: pageBackgroundColor.value,
       pageCount: pageCount.value,
       elements: elements.value
     })
@@ -458,12 +460,16 @@ onBeforeUnmount(() => {
   destroyPdfPreview()
 })
 
-// Undo/redo for the canvas (elements only, not the template name). Snapshot-based: the
-// whole `elements` array is JSON-cloned onto a history stack, debounced the same way the
+// Undo/redo for the canvas (elements + page background, not the template name). Snapshot-
+// based: the whole state is JSON-cloned onto a history stack, debounced the same way the
 // preview is — a burst of changes (typing, a drag, a resize) coalesces into a single undo
 // step once the user pauses, rather than one step per keystroke or per dragged pixel.
 const HISTORY_DEBOUNCE_MS = 500
 const HISTORY_LIMIT = 50
+interface HistoryState {
+  elements: TemplateElement[]
+  pageBackgroundColor?: string
+}
 const history = ref<string[]>([])
 const historyIndex = ref(-1)
 let historyDebounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -473,8 +479,12 @@ let isApplyingHistory = false
 const canUndo = computed(() => historyIndex.value > 0)
 const canRedo = computed(() => historyIndex.value < history.value.length - 1)
 
+function currentHistorySnapshot() {
+  return JSON.stringify({ elements: elements.value, pageBackgroundColor: pageBackgroundColor.value } satisfies HistoryState)
+}
+
 function commitHistory() {
-  const snapshot = JSON.stringify(elements.value)
+  const snapshot = currentHistorySnapshot()
   if (history.value[historyIndex.value] === snapshot) return // nothing actually changed
   history.value = history.value.slice(0, historyIndex.value + 1) // drop the old redo branch
   history.value.push(snapshot)
@@ -491,11 +501,12 @@ function scheduleHistoryCommit() {
 function applyHistoryAt(index: number) {
   isApplyingHistory = true
   historyIndex.value = index
-  const restored = JSON.parse(history.value[index]) as TemplateElement[]
-  elements.value = restored
+  const restored = JSON.parse(history.value[index]) as HistoryState
+  elements.value = restored.elements
+  pageBackgroundColor.value = restored.pageBackgroundColor
   // Keep the current selection if that element still exists at this point in history
   // (e.g. undoing a move just moves it back); otherwise there's nothing sensible to select.
-  if (!restored.some((el) => el.id === selectedId.value)) selectedId.value = null
+  if (!restored.elements.some((el) => el.id === selectedId.value)) selectedId.value = null
   nextTick(() => {
     isApplyingHistory = false
   })
@@ -529,7 +540,7 @@ function handleUndoRedoKeydown(event: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', handleUndoRedoKeydown))
 onBeforeUnmount(() => window.removeEventListener('keydown', handleUndoRedoKeydown))
 
-watch(elements, scheduleHistoryCommit, { deep: true })
+watch([elements, pageBackgroundColor], scheduleHistoryCommit, { deep: true })
 
 onBeforeUnmount(() => {
   if (historyDebounceTimer) clearTimeout(historyDebounceTimer)
@@ -540,7 +551,7 @@ onBeforeUnmount(() => {
 // again after every successful save; anything that changes the current state relative to
 // that baseline counts as "unsaved".
 function snapshotCurrent() {
-  return JSON.stringify({ name: name.value, pageCount: pageCount.value, elements: elements.value })
+  return JSON.stringify({ name: name.value, pageBackgroundColor: pageBackgroundColor.value, pageCount: pageCount.value, elements: elements.value })
 }
 
 const lastSavedSnapshot = ref('')
@@ -572,6 +583,7 @@ async function loadExisting() {
     name.value = template.name
     elements.value = template.elements
     pageCount.value = template.pageCount ?? 1
+    pageBackgroundColor.value = template.pageBackgroundColor
     currentPage.value = 0
   } catch (err: any) {
     // Templates are private to their creator — surfaces the backend's actual reason
@@ -592,7 +604,7 @@ onMounted(async () => {
   // new template with zero elements) counts as an unsaved change.
   lastSavedSnapshot.value = snapshotCurrent()
   // Starting point for undo/redo — "undo" from the very first edit returns here.
-  history.value = [JSON.stringify(elements.value)]
+  history.value = [currentHistorySnapshot()]
   historyIndex.value = 0
 })
 
@@ -726,6 +738,7 @@ async function handleSave() {
       name: name.value,
       pageWidth: PAGE_WIDTH,
       pageHeight: PAGE_HEIGHT,
+      pageBackgroundColor: pageBackgroundColor.value,
       pageCount: pageCount.value,
       elements: elements.value
     }
@@ -753,6 +766,10 @@ async function handleSave() {
     <header class="toolbar card">
       <NuxtLink class="btn btn-secondary" to="/templates">&larr; Templates</NuxtLink>
       <input v-model="name" class="field-input name-input" placeholder="Template name" />
+      <div class="page-bg-control" title="Page background color (applies to every page)">
+        <span class="page-bg-label">Page</span>
+        <AppColorInput :model-value="pageBackgroundColor" placeholder="white" @update:model-value="(v) => (pageBackgroundColor = v)" />
+      </div>
       <button class="btn btn-secondary" :disabled="!canUndo" title="Undo (Ctrl+Z)" @click="undo">&#8630; Undo</button>
       <button class="btn btn-secondary" :disabled="!canRedo" title="Redo (Ctrl+Shift+Z)" @click="redo">&#8631; Redo</button>
       <button class="btn btn-primary" :disabled="isSaving || hasNoUnsavedChanges" @click="handleSave">
@@ -803,7 +820,8 @@ async function handleSave() {
                   width: `${PAGE_WIDTH}px`,
                   height: `${PAGE_HEIGHT}px`,
                   transform: `scale(${pageThumbScale})`,
-                  '--thumb-border-width': `${2 / pageThumbScale}px`
+                  '--thumb-border-width': `${2 / pageThumbScale}px`,
+                  backgroundColor: pageBackgroundColor || undefined
                 }"
               >
                 <TemplateCanvasElement
@@ -937,7 +955,12 @@ async function handleSave() {
         <div class="canvas-scale-box" :style="{ width: `${PAGE_WIDTH * canvasScale}px`, height: `${PAGE_HEIGHT * canvasScale}px` }">
           <div
             class="canvas"
-            :style="{ width: `${PAGE_WIDTH}px`, height: `${PAGE_HEIGHT}px`, transform: `scale(${canvasScale})` }"
+            :style="{
+              width: `${PAGE_WIDTH}px`,
+              height: `${PAGE_HEIGHT}px`,
+              transform: `scale(${canvasScale})`,
+              backgroundColor: pageBackgroundColor || undefined
+            }"
             @pointerdown="selectedId = null"
           >
             <TemplateCanvasElement
@@ -1264,6 +1287,20 @@ async function handleSave() {
 .name-input {
   flex: 1;
   max-width: 300px;
+}
+.page-bg-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.page-bg-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.page-bg-control .app-color-input {
+  width: 140px;
 }
 .auth-toolbar-button {
   margin-left: auto;
