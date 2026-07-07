@@ -396,6 +396,10 @@ const productColumnOptions = computed(() => reportFieldSchema.value?.productFiel
 // updateSelected call above, which turns an empty string back into undefined before saving.
 const fontSelectOptions = computed(() => [{ value: '', label: 'Default' }, ...fontOptions.value])
 
+// Chart labels are optional (a chart can just show unlabeled bars) — '' maps to "no
+// chartLabelField set", same undefined-on-clear convention as the font picker above.
+const chartLabelOptions = computed(() => [{ value: '', label: 'None' }, ...productColumnOptions.value])
+
 async function renderCurrentPreview() {
   if (!previewCanvasEl.value || !lastPreviewBlob) return
   const arrayBuffer = await lastPreviewBlob.arrayBuffer()
@@ -619,7 +623,7 @@ function nextStagger() {
   return computeStagger(elementsOnCurrentPage.value.length)
 }
 
-function addElement(type: 'text' | 'field' | 'table' | 'panel') {
+function addElement(type: 'text' | 'field' | 'table' | 'panel' | 'chart') {
   const stagger = nextStagger()
   const base = { id: makeId(), x: 40 + stagger, y: 40 + stagger, width: 160, height: 24, fontSize: 12, page: currentPage.value }
 
@@ -631,6 +635,16 @@ function addElement(type: 'text' | 'field' | 'table' | 'panel') {
     // Sized/colored to be visible immediately — an empty, invisible rect would be
     // indistinguishable from a failed click.
     elements.value.push({ ...base, type, width: 200, height: 400, backgroundColor: '#e2e8f0' })
+  } else if (type === 'chart') {
+    elements.value.push({
+      ...base,
+      type,
+      width: 320,
+      height: 160,
+      itemsPath: 'products',
+      chartValueField: 'quantity',
+      chartBarColor: '#1f9d6e'
+    })
   } else {
     elements.value.push({
       ...base,
@@ -940,6 +954,14 @@ async function handleSave() {
           Table
           <span class="element-button-plus">+</span>
         </button>
+        <button class="element-button" @click="addElement('chart')">
+          <svg class="element-button-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+            <path d="M2 14V2M2 14h12" />
+            <path d="M5 14V9M8.3 14V6M11.6 14v-9" stroke-linecap="butt" />
+          </svg>
+          Chart
+          <span class="element-button-plus">+</span>
+        </button>
 
         <input
           ref="imageInputEl"
@@ -1113,6 +1135,36 @@ async function handleSave() {
               </div>
             </template>
 
+            <div v-else-if="selectedElement.type === 'chart'" class="field-group">
+              <label>Chart data</label>
+              <div class="style-row">
+                <span class="style-row-label">Value</span>
+                <AppSelect
+                  class="style-row-select"
+                  :model-value="selectedElement.chartValueField ?? ''"
+                  :options="productColumnOptions"
+                  @update:model-value="(v) => updateSelected({ chartValueField: v })"
+                />
+              </div>
+              <div class="style-row">
+                <span class="style-row-label">Label</span>
+                <AppSelect
+                  class="style-row-select"
+                  :model-value="selectedElement.chartLabelField ?? ''"
+                  :options="chartLabelOptions"
+                  @update:model-value="(v) => updateSelected({ chartLabelField: v || undefined })"
+                />
+              </div>
+              <div class="style-row">
+                <span class="style-row-label">Bar color</span>
+                <AppColorInput
+                  :model-value="selectedElement.chartBarColor"
+                  placeholder="#1f9d6e"
+                  @update:model-value="(v) => updateSelected({ chartBarColor: v })"
+                />
+              </div>
+            </div>
+
             <div v-else-if="selectedElement.type === 'image'" class="field-group">
               <img v-if="selectedElement.imageData" :src="selectedElement.imageData" class="image-thumb" alt="" />
               <button class="btn btn-secondary small-button" @click="triggerReplaceImage">Replace image</button>
@@ -1165,7 +1217,12 @@ async function handleSave() {
             <div class="field-group">
               <label>Style</label>
               <div
-                v-if="selectedElement.type === 'text' || selectedElement.type === 'field' || selectedElement.type === 'table'"
+                v-if="
+                  selectedElement.type === 'text' ||
+                  selectedElement.type === 'field' ||
+                  selectedElement.type === 'table' ||
+                  selectedElement.type === 'chart'
+                "
                 class="style-row"
               >
                 <span class="style-row-label">Font</span>
@@ -1238,6 +1295,16 @@ async function handleSave() {
                   class="font-size-input"
                   :value="selectedElement.borderRadius ?? 0"
                   @input="updateSelected({ borderRadius: Number(($event.target as HTMLInputElement).value) })"
+                />
+              </div>
+              <div class="style-row">
+                <span class="style-row-label">Shadow</span>
+                <input
+                  type="text"
+                  class="shadow-input"
+                  placeholder="e.g. 6px 6px 0 #111"
+                  :value="selectedElement.boxShadow ?? ''"
+                  @input="updateSelected({ boxShadow: ($event.target as HTMLInputElement).value || undefined })"
                 />
               </div>
             </div>
@@ -1561,6 +1628,9 @@ async function handleSave() {
   max-width: 160px;
 }
 .style-row-select {
+  max-width: 160px;
+}
+.shadow-input {
   max-width: 160px;
 }
 .dimensions-row {

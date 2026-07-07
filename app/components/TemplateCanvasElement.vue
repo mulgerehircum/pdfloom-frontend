@@ -46,6 +46,24 @@ function tableCellValue(row: Record<string, unknown> | undefined, fieldPath: str
   return value === undefined ? fieldPath : String(value)
 }
 
+// Chart preview uses the *whole* real products array (not just the 2-row table sample) so
+// bar heights are normalized against a realistic max, the same way the compiled PDF's
+// maxOf/percentOf Handlebars helpers normalize against the real array at render time.
+const chartProducts = computed<Array<Record<string, unknown>>>(() => props.reportContext?.products ?? [])
+
+function chartBarPercent(row: Record<string, unknown>, field?: string) {
+  if (!field) return 0
+  const max = Math.max(0, ...chartProducts.value.map((p) => Number(p[field]) || 0))
+  const value = Number(row[field]) || 0
+  return max > 0 ? Math.round((value / max) * 100) : 0
+}
+
+function chartLabelValue(row: Record<string, unknown>, field?: string) {
+  if (!field) return ''
+  const value = row[field]
+  return value === undefined ? '' : String(value)
+}
+
 // Text/field boxes always fit their own content exactly (matching how the PDF renders
 // them — see template-compiler.ts), so they render at natural size and report that size
 // back to the parent model rather than being manually resizable.
@@ -142,7 +160,8 @@ function onResizeStart(startEvent: PointerEvent) {
       textDecoration: element.underline ? 'underline' : undefined,
       color: element.color || undefined,
       backgroundColor: element.backgroundColor || undefined,
-      borderRadius: element.borderRadius ? `${element.borderRadius}px` : undefined
+      borderRadius: element.borderRadius ? `${element.borderRadius}px` : undefined,
+      boxShadow: element.boxShadow || undefined
     }"
     @pointerdown="onDragStart"
   >
@@ -172,6 +191,18 @@ function onResizeStart(startEvent: PointerEvent) {
       <template v-else-if="element.type === 'image'">
         <img v-if="element.imageData" :src="element.imageData" class="image-preview" alt="" />
         <div v-else class="image-placeholder">No image</div>
+      </template>
+      <template v-else-if="element.type === 'chart'">
+        <div v-if="chartProducts.length === 0" class="chart-preview-empty">No data</div>
+        <div v-else class="chart-preview">
+          <div v-for="(row, n) in chartProducts" :key="n" class="chart-preview-col">
+            <div
+              class="chart-preview-bar"
+              :style="{ height: `${chartBarPercent(row, element.chartValueField)}%`, background: element.chartBarColor || '#1f9d6e' }"
+            ></div>
+            <div v-if="element.chartLabelField" class="chart-preview-label">{{ chartLabelValue(row, element.chartLabelField) }}</div>
+          </div>
+        </div>
       </template>
       <!-- 'panel' has no content of its own — just the shared color/backgroundColor/
            borderRadius styling applied above on .canvas-element. -->
@@ -236,6 +267,40 @@ function onResizeStart(startEvent: PointerEvent) {
   align-items: center;
   justify-content: center;
   height: 100%;
+  color: #999;
+  font-size: 0.85em;
+}
+.chart-preview {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+}
+.chart-preview-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.chart-preview-bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+}
+.chart-preview-label {
+  margin-top: 3px;
+  font-size: 0.7em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.chart-preview-empty {
+  margin: auto;
   color: #999;
   font-size: 0.85em;
 }

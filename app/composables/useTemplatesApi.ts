@@ -2,7 +2,7 @@
 // auto-import for cross-composable calls.
 import { useApiFetch } from './useApiFetch'
 
-export type ElementType = 'text' | 'field' | 'table' | 'image' | 'panel'
+export type ElementType = 'text' | 'field' | 'table' | 'image' | 'panel' | 'chart'
 export type TextAlign = 'left' | 'center' | 'right'
 
 export interface TableColumn {
@@ -42,10 +42,17 @@ export interface TemplateElement {
   color?: string
   backgroundColor?: string
   borderRadius?: number
+  boxShadow?: string
   content?: string
   fieldPath?: string
   itemsPath?: string
   columns?: TableColumn[]
+  // 'chart' elements: a real bar chart over itemsPath — chartValueField is the numeric
+  // field each bar's height derives from (normalized against the max value in the array at
+  // render time), chartLabelField is the optional text under each bar.
+  chartValueField?: string
+  chartLabelField?: string
+  chartBarColor?: string
   imageData?: string
 }
 
@@ -87,6 +94,7 @@ export interface ReportContext {
   totalSkus: number
   unitsInStock: number
   needsRestocking: number
+  avgUnitPrice: string
   products: Array<Record<string, unknown>>
 }
 
