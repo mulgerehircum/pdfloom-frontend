@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Template } from '~/composables/useTemplatesApi'
+import type { PublicTemplateSummary, Template } from '~/composables/useTemplatesApi'
 
 const { fetchTemplates, deleteTemplate, customPdfUrl, fetchPublicTemplates, cloneTemplate } = useTemplatesApi()
 const { isLoggedIn } = useAuthApi()
@@ -36,7 +36,7 @@ async function handleDelete(id: string, name: string) {
 // The public gallery (GET /templates/public) is browsable regardless of login — separate
 // from the owner-scoped list above, so it loads unconditionally rather than reacting to
 // isLoggedIn like `load()` does.
-const galleryTemplates = ref<Template[]>([])
+const galleryTemplates = ref<PublicTemplateSummary[]>([])
 const galleryError = ref('')
 const cloningId = ref<string | null>(null)
 const showUpgradeModal = ref(false)
@@ -54,7 +54,7 @@ onMounted(loadGallery)
 
 // Freemium gate is UI-only for now (see templates.schema.ts's `tier` comment) — a premium
 // template just shows an upgrade prompt instead of actually cloning, no payment involved yet.
-async function handleUseTemplate(template: Template) {
+async function handleUseTemplate(template: PublicTemplateSummary) {
   if (template.tier === 'premium') {
     showUpgradeModal.value = true
     return
@@ -130,7 +130,7 @@ async function handleUseTemplate(template: Template) {
           <span v-if="template.tier === 'premium'" class="badge badge-primary" title="Premium template">&#128274; Premium</span>
           <span v-else class="badge badge-success">Free</span>
         </div>
-        <p class="hint-text">{{ template.elements.length }} elements</p>
+        <p class="hint-text">{{ template.elementCount }} elements</p>
         <div class="actions">
           <a class="btn btn-secondary btn-sm" :href="customPdfUrl(template._id)" target="_blank" rel="noopener">Preview PDF</a>
           <button class="btn btn-primary btn-sm" :disabled="cloningId === template._id" @click="handleUseTemplate(template)">

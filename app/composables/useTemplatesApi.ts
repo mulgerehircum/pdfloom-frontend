@@ -79,6 +79,19 @@ export interface TemplateElement {
   imageData?: string
 }
 
+// What GET /templates/public actually returns — deliberately NOT the full Template.
+// compiledTemplate (the raw Handlebars/HTML source) and the full elements array (can carry
+// embedded base64 images) have no business being in a public listing response; see
+// templates.service.ts's findPublic() on the backend for the full reasoning.
+export interface PublicTemplateSummary {
+  _id: string
+  name: string
+  tier?: 'free' | 'premium'
+  pageWidth: number
+  pageHeight: number
+  elementCount: number
+}
+
 export interface Template {
   _id: string
   name: string
@@ -160,7 +173,7 @@ export function useTemplatesApi() {
   const deleteTemplate = (id: string) => apiFetch(`/templates/${id}`, { method: 'DELETE' })
 
   // Public gallery — no auth needed to browse, matches the backend's GET /templates/public.
-  const fetchPublicTemplates = () => apiFetch<Template[]>('/templates/public')
+  const fetchPublicTemplates = () => apiFetch<PublicTemplateSummary[]>('/templates/public')
 
   // Clones a shared gallery template into a new template owned by the current user —
   // requires login (it's a "save"), same as createTemplate.
