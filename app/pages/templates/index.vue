@@ -41,6 +41,14 @@ const galleryError = ref('')
 const cloningId = ref<string | null>(null)
 const showUpgradeModal = ref(false)
 
+// Thumbnails are server-rendered PNGs (see reports.controller.ts) — the first render of any
+// given template is genuinely slow (headless Chromium), so each card tracks its own
+// loaded/errored state to show a skeleton instead of a blank box while its <img> loads.
+// Cache-Control on the backend response makes repeat/cross-visitor loads near-instant after
+// the first one, but that first paint still needs a visible loading state.
+const loadedThumbIds = ref(new Set<string>())
+const erroredThumbIds = ref(new Set<string>())
+
 async function loadGallery() {
   galleryError.value = ''
   try {
@@ -130,11 +138,17 @@ async function handleUseTemplate(template: PublicTemplateSummary) {
     <section class="gallery-grid">
       <div v-for="template in galleryTemplates" :key="template._id" class="card gallery-card">
         <div class="gallery-card-thumb" :style="{ aspectRatio: `${template.pageWidth} / ${template.pageHeight}` }">
+          <div v-if="!loadedThumbIds.has(template._id) && !erroredThumbIds.has(template._id)" class="gallery-card-thumb-skeleton" />
+          <p v-if="erroredThumbIds.has(template._id)" class="hint-text gallery-card-thumb-fallback">No preview</p>
           <img
+            v-else
             :src="publicTemplatePreviewImageUrl(template._id, 320)"
             :alt="`${template.name} preview`"
             loading="lazy"
             class="gallery-card-thumb-img"
+            :class="{ 'is-loaded': loadedThumbIds.has(template._id) }"
+            @load="loadedThumbIds.add(template._id)"
+            @error="erroredThumbIds.add(template._id)"
           />
         </div>
         <div class="gallery-card-head">
@@ -245,6 +259,7 @@ async function handleUseTemplate(template: PublicTemplateSummary) {
   gap: var(--space-2);
 }
 .gallery-card-thumb {
+  position: relative;
   width: 100%;
   border-radius: var(--radius-sm);
   overflow: hidden;
@@ -257,6 +272,41 @@ async function handleUseTemplate(template: PublicTemplateSummary) {
   height: 100%;
   object-fit: cover;
   object-position: top;
+  /* Fades in once loaded rather than popping in abruptly the instant the (possibly slow,
+     first-render) PNG arrives. */
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.gallery-card-thumb-img.is-loaded {
+  opacity: 1;
+}
+.gallery-card-thumb-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--color-bg) 25%, var(--color-surface) 50%, var(--color-bg) 75%);
+  background-size: 200% 100%;
+  animation: gallery-thumb-pulse 1.4s ease-in-out infinite;
+}
+@keyframes gallery-thumb-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery-card-thumb-skeleton {
+    animation: none;
+  }
+}
+.gallery-card-thumb-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
 }
 .gallery-card-head {
   display: flex;
