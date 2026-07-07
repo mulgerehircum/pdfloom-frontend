@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1260 1170" fill="none">
-  <rect width="1260" height="1170" fill="#12181a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1170" fill="none">
+  <rect width="1560" height="1170" fill="#12181a"/>
 
   <!-- thread lines (drawn first, so wheel/hub/text sit on top) -->
   <g stroke="#2bb4a8" stroke-width="3" stroke-linecap="round">
@@ -80,10 +80,10 @@
   <line x1="1100" y1="500" x2="1121" y2="517" stroke="#e6ebea" stroke-width="7" stroke-linecap="round"/>
 
   <!-- solid backing so the wheel spokes/threads behind the wordmark don't show through it -->
-  <rect x="385" y="588" width="570" height="145" rx="8" fill="#12181a" stroke="#3a4d4f" stroke-width="2"/>
+  <rect x="385" y="443" width="1140" height="290" rx="16" fill="#12181a" stroke="#3a4d4f" stroke-width="4"/>
 
-  <!-- wordmark -->
-  <text x="398" y="700" font-family="'Poppins','Inter',system-ui,sans-serif" font-weight="800" font-size="118" letter-spacing="-2">
+  <!-- wordmark (2x — bottom/left edges anchored to the same spot as before, growing up/right) -->
+  <text x="398" y="812" font-family="'Poppins','Inter',system-ui,sans-serif" font-weight="800" font-size="236" letter-spacing="-4">
     <tspan fill="#2bb4a8">PDF</tspan><tspan fill="#e6ebea">Loom</tspan>
   </text>
 </svg>
