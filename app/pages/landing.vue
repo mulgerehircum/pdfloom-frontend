@@ -192,7 +192,13 @@ const titleTypedText = computed(() => {
 })
 
 const showNewField = computed(() => step0Progress.value > 0.4)
-const showTooltip = computed(() => step0Progress.value > 0.6)
+// Gated on editorStep === 0 specifically, unlike the others below — step0Progress locks at 1
+// once you've scrolled past step 0 (see its own computed above), so a plain ">0.6" check would
+// leave the tooltip stuck visible for the rest of the section. The new field and its applied
+// color/font are meant to persist past step 0 (like a real edit would); the tooltip is
+// transient UI chrome for demonstrating that edit, not something that should still be floating
+// there once the scroll has moved on to a different step's story.
+const showTooltip = computed(() => editorStep.value === 0 && step0Progress.value > 0.6)
 const colorChanged = computed(() => step0Progress.value > 0.75)
 const fontChanged = computed(() => step0Progress.value > 0.88)
 
