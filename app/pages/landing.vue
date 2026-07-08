@@ -187,8 +187,7 @@ const step0Progress = computed(() => {
 const titleTypedText = computed(() => {
   const typingProgress = Math.max(0, Math.min(1, step0Progress.value / 0.4))
   const count = Math.round(typingProgress * STEP0_TITLE_TEXT.length)
-  const typed = STEP0_TITLE_TEXT.slice(0, count)
-  return count < STEP0_TITLE_TEXT.length ? `${typed}|` : typed
+  return STEP0_TITLE_TEXT.slice(0, count)
 })
 
 const showNewField = computed(() => step0Progress.value > 0.4)
