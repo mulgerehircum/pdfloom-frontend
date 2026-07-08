@@ -154,7 +154,10 @@ const zoneElementIds = [
 // Only the 3 real-element groups get a highlight rect — the "pages" step (index 3) has no
 // canvas elements of its own; it highlights the separate mini-pages-thumbs overlay instead.
 const zoneHighlightRects = [
-  { x: 32, y: 28, width: 380, height: 78 },
+  // Wide enough to contain title + subtitle + the step-0 storyboard's "INV-1042" field at
+  // its default position (x:380) as well — that field sits further right than title/subtitle
+  // alone ever did, so this box needs to reach past it, not just the original two.
+  { x: 32, y: 28, width: 580, height: 78 },
   { x: 32, y: 108, width: 460, height: 112 },
   { x: 32, y: 226, width: 460, height: 74 }
 ]
