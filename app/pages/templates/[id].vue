@@ -18,7 +18,7 @@ const { isLoggedIn, logout } = useAuthApi()
 
 async function handleLogout() {
   logout()
-  await router.push('/')
+  await router.push('/dashboard')
 }
 
 const reportContext = ref<ReportContext | null>(null)

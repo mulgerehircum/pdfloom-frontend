@@ -179,7 +179,7 @@ async function handleUseTemplate(template: PublicTemplateSummary) {
       </div>
     </div>
 
-    <NuxtLink class="btn btn-secondary" to="/">&larr; Back to inventory</NuxtLink>
+    <NuxtLink class="btn btn-secondary" to="/dashboard">&larr; Back to inventory</NuxtLink>
   </main>
 </template>
 
