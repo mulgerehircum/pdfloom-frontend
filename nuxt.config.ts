@@ -7,13 +7,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       link: [
-        // SVG favicon first (scalable, preferred by browsers that support it); favicon.ico
-        // stays as the fallback for browsers that don't. Named favicon-v2.svg (not just
-        // favicon.svg?v=2) deliberately — some browsers key their favicon cache by URL path
-        // alone, ignoring the query string, so a query-string cache-buster alone didn't get
-        // picked up. Bump the "-vN" suffix (and rename the file) any time this changes again.
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon-v2.svg' },
-        { rel: 'alternate icon', href: '/favicon.ico' }
+        // Named favicon-v2.svg (not just favicon.svg) deliberately — some browsers key their
+        // favicon cache by URL path alone, ignoring query strings, so a plain cache-busting
+        // query param wasn't enough. Bump the "-vN" suffix (and rename the file) any time this
+        // changes again. No .ico fallback anymore — it's been deleted (was a stale leftover
+        // browsers kept showing instead of this).
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon-v2.svg' }
       ]
     }
   },
