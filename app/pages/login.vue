@@ -54,7 +54,6 @@ function toggleMode() {
       <button class="btn-link toggle-link" @click="toggleMode">
         {{ mode === 'login' ? 'Need an account? Register' : 'Already have an account? Sign in' }}
       </button>
-      <p class="hint-text seed-hint">Default seeded user: <code>admin</code> / <code>admin123</code></p>
     </div>
   </main>
 </template>
