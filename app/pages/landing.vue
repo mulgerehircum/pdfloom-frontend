@@ -675,12 +675,20 @@ onBeforeUnmount(() => {
     </header>
 
     <section class="hero">
-      <div class="hero-orb" />
+      <!-- Real semantic heading for a11y/SEO — the animation below is purely decorative
+           kinetic typography of this same text, so it's marked aria-hidden. -->
+      <h1 class="sr-only">Design your own PDF reports — visually.</h1>
+      <div class="hero-canvas-panel">
+        <div class="hero-canvas-grid" />
+        <div class="hero-anim-container" aria-hidden="true">
+          <ClientOnly>
+            <HeroTextAnimation />
+          </ClientOnly>
+        </div>
+      </div>
       <div class="hero-content">
-        <div class="eyebrow-pill">Introducing PDFloom</div>
-        <h1>Design your own PDF reports — visually.</h1>
         <p class="hero-subhead">
-          Drag fields, tables, and images onto a page. Bind them to your live inventory data. No Handlebars, no PDF
+          Drag fields, tables, and images onto a page. Bind them to your live inventory data — no Handlebars, no PDF
           library, no template stuck in someone else's codebase.
         </p>
         <div class="hero-ctas">
@@ -688,10 +696,10 @@ onBeforeUnmount(() => {
           <a href="#examples" class="btn btn-secondary btn-lg">View example templates</a>
         </div>
         <p class="hero-microcopy">Free to design. Sign in only to save.</p>
-        <div class="scroll-cue">
-          <span>Scroll to see it in action</span>
-          <span class="scroll-cue-arrow">&darr;</span>
-        </div>
+      </div>
+      <div class="scroll-cue">
+        <span>Scroll to see it in action</span>
+        <span class="scroll-cue-arrow">&darr;</span>
       </div>
     </section>
 
@@ -992,54 +1000,51 @@ onBeforeUnmount(() => {
 .hero {
   max-width: 1360px;
   margin: 0 auto;
-  padding: var(--space-7) var(--space-5) var(--space-6);
+  padding: var(--space-7) var(--space-5) var(--space-7);
   text-align: center;
   position: relative;
-}
-.hero-orb {
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  width: 520px;
-  height: 320px;
-  margin-left: -260px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--color-primary-soft), transparent 70%);
-  opacity: 0.8;
-  pointer-events: none;
-  z-index: 0;
-  animation: floatOrb 9s ease-in-out infinite;
-}
-@keyframes floatOrb {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(-14px, 18px); }
+  /* min-height + flex column, with .scroll-cue's margin-top:auto below, lands the cue at the
+     bottom of the viewport on first load while staying in normal flow (no absolute/fixed) —
+     it still scrolls away with the rest of the page like any other in-flow element. 128px
+     accounts for the sticky header above (96px logo + space-4 padding top/bottom), which
+     still occupies its own space in normal flow despite being sticky. */
+  min-height: calc(100vh - 128px);
+  display: flex;
+  flex-direction: column;
 }
 @keyframes livePulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+.hero-canvas-panel {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-7) var(--space-5) var(--space-6);
+  overflow: hidden;
+}
+/* Faint page/graph-paper grid backdrop — decorative, a visual nod to the page-design canvas
+   that's the product's own core metaphor. */
+.hero-canvas-grid {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 33px, var(--color-border) 33px, var(--color-border) 34px),
+    repeating-linear-gradient(90deg, transparent, transparent 33px, var(--color-border) 33px, var(--color-border) 34px);
+  background-size: 34px 34px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.hero-anim-container {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+}
 .hero-content {
   position: relative;
   z-index: 1;
-}
-.eyebrow-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  margin-bottom: var(--space-5);
-}
-.hero h1 {
-  margin: 0 0 var(--space-4);
-  font-size: calc(var(--text-2xl) * 2);
-  line-height: 1.1;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin-top: var(--space-6);
 }
 .hero-subhead {
   margin: 0 auto var(--space-6);
@@ -1064,7 +1069,10 @@ onBeforeUnmount(() => {
   color: var(--color-text-faint);
 }
 .scroll-cue {
-  margin-top: var(--space-6);
+  /* Pushes itself to the bottom of .hero's flex column — see the min-height:100vh comment
+     on .hero above. */
+  margin-top: auto;
+  padding-top: var(--space-6);
   font-size: var(--text-xs);
   color: var(--color-text-faint);
   display: flex;
@@ -1797,7 +1805,6 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-orb,
   .scroll-cue-arrow {
     animation: none !important;
   }

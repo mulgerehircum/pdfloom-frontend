@@ -323,6 +323,19 @@ a {
 .text-muted {
   color: var(--color-text-muted);
 }
+/* Visually hidden but present for screen readers/SEO — for real semantic markup (e.g. an
+   <h1>) that's redundant with an adjacent decorative visual. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .error-text {
   color: var(--color-danger);
   font-size: var(--text-sm);
