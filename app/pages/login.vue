@@ -17,7 +17,7 @@ async function handleSubmit() {
     } else {
       await register(username.value, password.value)
     }
-    await router.push('/')
+    await router.push('/dashboard')
   } catch (err: any) {
     error.value = err?.data?.message?.toString() ?? 'Something went wrong'
   } finally {
