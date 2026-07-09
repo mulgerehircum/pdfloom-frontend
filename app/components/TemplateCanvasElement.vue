@@ -71,10 +71,13 @@ function elementBackground(el: TemplateElement) {
   return computeBackground(el.backgroundFill, el.gradientStops, el.gradientAngle, el.backgroundColor)
 }
 
-// Text/field boxes always fit their own content exactly (matching how the PDF renders
-// them — see template-compiler.ts), so they render at natural size and report that size
-// back to the parent model rather than being manually resizable.
-const autoFitsContent = computed(() => props.element.type === 'text' || props.element.type === 'field')
+// Field boxes are short, single-line, bound-data values — they always fit their own content
+// exactly (matching how the PDF renders them — see template-compiler.ts), with no manual
+// resizing at all. Text boxes get a user-controlled width (see the "Width (px)" control in
+// [id].vue) so long-form content wraps within a chosen width instead of running off the
+// page; their height still auto-fits to however many lines that wrapping produces.
+const autoFitsWidth = computed(() => props.element.type === 'field')
+const autoFitsHeight = computed(() => props.element.type === 'text' || props.element.type === 'field')
 
 const canvasElementEl = ref<HTMLElement | null>(null)
 let bodyResizeObserver: ResizeObserver | null = null
@@ -84,7 +87,7 @@ watch(
   (el) => {
     bodyResizeObserver?.disconnect()
     bodyResizeObserver = null
-    if (!el || !autoFitsContent.value) return
+    if (!el || !autoFitsHeight.value) return
     bodyResizeObserver = new ResizeObserver(() => {
       const width = el.offsetWidth
       const height = el.offsetHeight
@@ -130,11 +133,16 @@ function onResizeStart(startEvent: PointerEvent) {
   const startY = startEvent.clientY
   const originWidth = props.element.width
   const originHeight = props.element.height
+  // Text boxes only drag-resize horizontally — height stays whatever autosize's
+  // ResizeObserver reports back once the new width reflows the wrapped content.
+  const widthOnly = props.element.type === 'text'
 
   function onMove(moveEvent: PointerEvent) {
     const dx = (moveEvent.clientX - startX) / props.scale
     const dy = (moveEvent.clientY - startY) / props.scale
-    emit('resize', { width: Math.max(1, Math.round(originWidth + dx)), height: Math.max(1, Math.round(originHeight + dy)) })
+    const width = Math.max(1, Math.round(originWidth + dx))
+    const height = widthOnly ? originHeight : Math.max(1, Math.round(originHeight + dy))
+    emit('resize', { width, height })
   }
 
   function onUp() {
@@ -156,8 +164,8 @@ function onResizeStart(startEvent: PointerEvent) {
     :style="{
       left: `${element.x}px`,
       top: `${element.y}px`,
-      width: autoFitsContent ? 'auto' : `${element.width}px`,
-      height: autoFitsContent ? 'auto' : `${element.height}px`,
+      width: autoFitsWidth ? 'auto' : `${element.width}px`,
+      height: autoFitsHeight ? 'auto' : `${element.height}px`,
       fontSize: `${element.fontSize ?? 12}px`,
       // Matches template-compiler.ts's fallback stack exactly — the actual font file is
       // loaded via the <link> useHead() injects in [id].vue based on which fonts are in use.
@@ -214,7 +222,12 @@ function onResizeStart(startEvent: PointerEvent) {
       <!-- 'panel' has no content of its own — just the shared color/backgroundColor/
            borderRadius styling applied above on .canvas-element. -->
     </div>
-    <div v-if="selected && !autoFitsContent" class="resize-handle" @pointerdown="onResizeStart"></div>
+    <div
+      v-if="selected && !autoFitsWidth"
+      class="resize-handle"
+      :class="{ 'resize-handle-horizontal': element.type === 'text' }"
+      @pointerdown="onResizeStart"
+    ></div>
   </div>
 </template>
 
@@ -241,7 +254,13 @@ function onResizeStart(startEvent: PointerEvent) {
   pointer-events: none;
   height: 100%;
   box-sizing: border-box;
-  white-space: nowrap;
+  /* normal (not nowrap) so long text/field content wraps instead of running off the page as
+     one unbroken line — .canvas-element's width is auto (shrink-to-fit), and .canvas (its
+     containing block) has a definite fixed width, so the browser naturally caps wrapping at
+     the page width once wrapping is allowed. overflow-wrap catches single tokens (a long
+     unbroken value with no spaces) that would otherwise still overflow on their own. */
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 .table-preview {
   /* Matches the compiled PDF's table styling (template-compiler.ts) — plain black text,
@@ -320,5 +339,15 @@ function onResizeStart(startEvent: PointerEvent) {
   background: var(--color-primary);
   border-radius: 2px;
   cursor: nwse-resize;
+}
+/* Text boxes only resize width (height stays auto-fit to the wrapped content), so the handle
+   moves to the right-middle edge with a horizontal cursor rather than the corner, signaling
+   that only horizontal dragging does anything. */
+.resize-handle-horizontal {
+  right: -4px;
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: ew-resize;
 }
 </style>

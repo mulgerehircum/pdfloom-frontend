@@ -1309,7 +1309,20 @@ async function handleSave() {
               </div>
             </div>
 
-            <div v-if="selectedElement.type !== 'text' && selectedElement.type !== 'field'" class="field-group">
+            <div v-if="selectedElement.type === 'text'" class="field-group">
+              <label>Width (px)</label>
+              <input
+                type="number"
+                min="1"
+                aria-label="Width (px)"
+                placeholder="Width"
+                :value="selectedElement.width"
+                @input="updateSelected({ width: Math.max(1, Number(($event.target as HTMLInputElement).value)) })"
+              />
+              <p class="hint-text">Controls where long text wraps. Height follows automatically.</p>
+            </div>
+
+            <div v-else-if="selectedElement.type !== 'field'" class="field-group">
               <label>Dimensions (px)</label>
               <div class="dimensions-row">
                 <input
