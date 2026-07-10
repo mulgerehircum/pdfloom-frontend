@@ -43,14 +43,12 @@ export interface TooltipPosition {
 
 // Positions a tooltip relative to the scaled canvas's own (0,0) origin, flipping above/below
 // and clamping to both axes so it never escapes past the canvas's edges regardless of where
-// the element sits (a real bug caught during development: an element near the top of the
-// canvas pushed the tooltip above the visible page entirely).
+// the element sits.
 //
-// The above/below flip previously only checked whether there was room *above* — it never
-// verified the "below" fallback actually fit within the canvas's bottom edge, so an element
-// near the bottom of a tall tooltip's page still bled past the container. Now both sides are
-// checked, with a final clamp for the (rare) case where the tooltip is taller than the canvas
-// has room for in either direction.
+// The above/below flip must check that the "below" fallback actually fits within the canvas's
+// bottom edge (not just that there's no room above), so an element near the bottom of a tall
+// tooltip's page doesn't bleed past the container. A final clamp handles the rare case where
+// the tooltip is taller than the canvas has room for in either direction.
 export function computeTooltipPosition({
   elementX,
   elementY,

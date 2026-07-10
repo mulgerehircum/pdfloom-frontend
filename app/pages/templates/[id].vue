@@ -2162,10 +2162,10 @@ async function handleSave() {
 
      flex/min-width let this fill whatever room is actually left over in .workspace
      (rather than always reserving the full unscaled page width) so it doesn't force
-     a horizontal scrollbar on wide-but-not-wide-enough viewports. Its width is never
-     derived from canvasScale (that would feed back into the ResizeObserver below and
-     never settle — verified this the hard way) — it's purely flex-distributed space,
-     so canvasScale.value's widthScale term now reflects genuinely available room. */
+     a horizontal scrollbar on wide-but-not-wide-enough viewports. Its width must not be
+     derived from canvasScale — that feeds back into the ResizeObserver below and never
+     settles — so it's purely flex-distributed space, and canvasScale.value's widthScale
+     term reflects genuinely available room. */
   flex: 1 1 0%;
   min-width: 0;
   display: flex;
